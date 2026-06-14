@@ -86,7 +86,11 @@ export default function App() {
 
     case 'folder':
       return (
-        <FolderPicker onPicked={handlePicked} onAuthError={handleAuthError} />
+        <FolderPicker
+          onPicked={handlePicked}
+          onAuthError={handleAuthError}
+          onSignOut={handleSignOut}
+        />
       )
 
     case 'list':

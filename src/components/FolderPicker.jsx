@@ -9,7 +9,7 @@ import { pickFolder } from '../auth/googlePicker.js'
 // Lets the user pick an existing app-accessible folder as the recipe root, or
 // create a new one. (With the drive.file scope the list only contains folders
 // this app created/opened — see api/drive.js.)
-export default function FolderPicker({ onPicked, onAuthError }) {
+export default function FolderPicker({ onPicked, onAuthError, onSignOut }) {
   const [folders, setFolders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -117,6 +117,12 @@ export default function FolderPicker({ onPicked, onAuthError }) {
             </button>
           </>
         )}
+
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <button className="btn link" onClick={onSignOut}>
+            Se déconnecter
+          </button>
+        </div>
       </div>
     </div>
   )
