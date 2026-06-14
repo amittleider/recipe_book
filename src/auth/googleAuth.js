@@ -9,7 +9,12 @@
 // refresh on every load; fall back to the auth screen if it fails").
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
-const SCOPE = 'https://www.googleapis.com/auth/drive.file'
+// Full `drive` scope: the app must see (and edit) recipe files that were added
+// to the shared folder manually through the Drive UI — not just ones it created.
+// The narrower `drive.file` scope only grants access to files the app itself
+// created or that were opened via the Picker, so manually-uploaded recipes were
+// invisible. See CLAUDE.md for the original (now superseded) privacy decision.
+const SCOPE = 'https://www.googleapis.com/auth/drive'
 const TOKEN_KEY = 'nr.token'
 
 let tokenClient = null
