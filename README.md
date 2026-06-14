@@ -26,7 +26,12 @@ service worker) • GitHub Pages.
      - `https://<your-user>.github.io` (production)
    - Copy `.env.example` to `.env` and set `VITE_GOOGLE_CLIENT_ID`.
 
-3. **Run locally**
+3. **Enable the Picker API + create an API key** (for opening shared folders)
+   - Enable <https://console.cloud.google.com/apis/library/picker.googleapis.com>.
+   - Credentials → **Create credentials → API key**; restrict it to the Picker
+     API and your origins. Set it in `.env` as `VITE_GOOGLE_API_KEY`.
+
+4. **Run locally**
 
    ```sh
    npm run dev
@@ -57,6 +62,12 @@ ID as a repository secret named `VITE_GOOGLE_CLIENT_ID`, and set
 - **Folder picker** — because `drive.file` only exposes folders the app created
   or opened, the picker lists app-accessible folders and lets you create a new
   root (e.g. *Nos Recettes*). The chosen folder ID is saved to `localStorage`.
+
+- **Sharing one folder between two people** — the second user can't see a folder
+  the first user created (drive.file is per-user). They tap **Ouvrir un dossier
+  partagé**, which launches the **Google Picker**; selecting the shared folder
+  grants their token `drive.file` access to it, pointing both users at the same
+  root. (Share the folder via Google Drive first.)
 
 - **Recipes** — each recipe is a subfolder containing `recipe.md`. The list
   reads each file to show the title (first `# heading`) and time (`**Time:**`).
