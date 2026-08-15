@@ -36,11 +36,13 @@ After changing the client ID, regenerate or rebuild the native project.
 
 ## Install and run
 
-Requirements: a Mac with Xcode and CocoaPods, Node.js, and an iOS simulator or
-registered physical device.
+Requirements: a Mac with Xcode, Node.js, and an iOS simulator or registered
+physical device. CocoaPods is installed project-locally through Bundler.
 
 ```sh
 npm install
+gem install --user-install bundler -v 2.4.22 --no-document
+env BUNDLE_PATH=vendor/bundle /usr/bin/bundle _2.4.22_ install
 cp .env.example .env
 # Edit .env with the real iOS OAuth client ID.
 npm run ios
@@ -50,6 +52,25 @@ Google Sign-In includes native code, so this app requires an Expo development
 build and does not run in Expo Go. `npm run ios` generates the native project and
 opens the simulator build. To start Metro for an already-installed development
 build, run `npm start`.
+
+### Run from Xcode
+
+1. Run `npm run ios` once so Expo generates the native project and installs its
+   pods.
+2. Open `ios/NosRecettes.xcworkspace` in Xcode. Do not open the `.xcodeproj`;
+   the workspace includes the CocoaPods dependencies.
+3. Select the **NosRecettes** scheme and an iPhone simulator, then press
+   **Cmd-R**.
+4. Keep `npm start` running in a terminal so the Debug build can load its
+   JavaScript bundle and support Fast Refresh.
+
+For a physical iPhone, choose the **NosRecettes** target's **Signing &
+Capabilities** tab, select your Apple developer team, connect and trust the
+device, choose it as the run destination, and press **Cmd-R**. Google OAuth still
+uses the bundle ID `com.nosrecettes.app`.
+
+The first native build compiles React Native from source and can take several
+minutes. Later builds use Xcode's cache and are substantially faster.
 
 ## Verification
 

@@ -5,7 +5,8 @@
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start --dev-client",
-    "ios": "expo prebuild --platform ios && expo run:ios",
+    "pods": "env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer BUNDLE_PATH=vendor/bundle RUBYOPT=-rlogger COCOAPODS_DISABLE_STATS=true /usr/bin/bundle _2.4.22_ exec pod install --project-directory=ios --silent",
+    "ios": "expo prebuild --platform ios --no-install && npm run pods && env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer expo run:ios",
     "android": "expo prebuild --platform android && expo run:android",
     "prebuild": "expo prebuild",
     "typecheck": "tsc --noEmit"
@@ -13,6 +14,7 @@
   "dependencies": {
     "@react-native-google-signin/google-signin": "^16.1.4",
     "expo": "^57.0.13",
+    "expo-build-properties": "~57.0.11",
     "expo-secure-store": "^57.0.1",
     "expo-status-bar": "^57.0.1",
     "react": "19.2.3",
