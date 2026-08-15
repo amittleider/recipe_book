@@ -53,6 +53,10 @@ build and does not run in Expo Go. `npm run ios` generates the native project an
 opens the simulator build. To start Metro for an already-installed development
 build, run `npm start`.
 
+To install the app on physical iPhones and deliver updates to the two intended
+users, use TestFlight. See [IPHONE_INSTALL.md](IPHONE_INSTALL.md) for the one-time
+Apple/Expo setup, first installation, and normal update workflow.
+
 ### Run from Xcode
 
 1. Run `npm run ios` once so Expo generates the native project and installs its

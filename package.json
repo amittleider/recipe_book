@@ -9,12 +9,15 @@
     "ios": "expo prebuild --platform ios --no-install && npm run pods && env DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer expo run:ios",
     "android": "expo prebuild --platform android && expo run:android",
     "prebuild": "expo prebuild",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "release:ios": "npx eas-cli build --platform ios --profile production --auto-submit",
+    "submit:ios": "npx eas-cli submit --platform ios --profile production --latest"
   },
   "dependencies": {
     "@react-native-google-signin/google-signin": "^16.1.4",
     "expo": "^57.0.13",
     "expo-build-properties": "~57.0.11",
+    "expo-file-system": "~57.0.4",
     "expo-secure-store": "^57.0.1",
     "expo-status-bar": "^57.0.1",
     "react": "19.2.3",

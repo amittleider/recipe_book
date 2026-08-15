@@ -1,57 +1,67 @@
 import { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet } from 'react-native'
-import { AuthError, findRecipeFile, readFile } from '../api/drive'
+import { ScrollView, StyleSheet, Text } from 'react-native'
+import { AuthError } from '../api/drive'
+import { getBody, revalidateRecipe, useRecipe } from '../data/recipeStore'
 import { Button, ErrorBanner, Header, LoadingState, Screen } from '../components/ui'
 import { RecipeMarkdown } from '../components/RecipeMarkdown'
-import type { RecipeSummary } from '../types'
+import { colors } from '../theme'
 
 type Props = {
-  recipe: RecipeSummary
+  folderId: string
   onBack: () => void
-  onEdit: (recipe: RecipeSummary) => void
+  onEdit: (folderId: string) => void
   onAuthError: () => void
 }
 
-export function RecipeDetailScreen({ recipe, onBack, onEdit, onAuthError }: Props) {
-  const [markdown, setMarkdown] = useState('')
-  const [fileId, setFileId] = useState(recipe.fileId)
-  const [loading, setLoading] = useState(true)
+export function RecipeDetailScreen({ folderId, onBack, onEdit, onAuthError }: Props) {
+  const recipe = useRecipe(folderId)
+  const markdown = getBody(recipe?.fileId ?? null)
   const [error, setError] = useState('')
+  // Only ever block on the network when there is nothing cached to show.
+  const [loading, setLoading] = useState(markdown === null)
 
   useEffect(() => {
     let mounted = true
-    async function load() {
-      try {
-        const id = fileId ?? await findRecipeFile(recipe.folderId)
-        if (!mounted) return
-        setFileId(id)
-        setMarkdown(id ? await readFile(id) : '')
-      } catch (caught) {
+    revalidateRecipe(folderId)
+      .catch((caught: unknown) => {
         if (caught instanceof AuthError) return onAuthError()
-        if (mounted) setError(caught instanceof Error ? caught.message : 'Lecture impossible')
-      } finally {
+        // A failed refresh is silent while cached content is on screen.
+        if (mounted && markdown === null) {
+          setError(caught instanceof Error ? caught.message : 'Lecture impossible')
+        }
+      })
+      .finally(() => {
         if (mounted) setLoading(false)
-      }
+      })
+    return () => {
+      mounted = false
     }
-    void load()
-    return () => { mounted = false }
-  }, [recipe.folderId])
+  }, [folderId])
 
   return (
     <Screen>
       <Header
         title="Recette"
         left={<Button variant="link" onPress={onBack}>‹ Retour</Button>}
-        right={<Button variant="secondary" onPress={() => onEdit({ ...recipe, fileId })}>Modifier</Button>}
+        right={<Button variant="secondary" onPress={() => onEdit(folderId)}>Modifier</Button>}
       />
-      {loading ? <LoadingState /> : (
+      {loading && markdown === null ? (
+        <LoadingState />
+      ) : (
         <ScrollView contentContainerStyle={styles.content}>
           <ErrorBanner message={error} />
-          <RecipeMarkdown>{markdown}</RecipeMarkdown>
+          {markdown === null ? (
+            <Text style={styles.missing}>Cette recette n’a pas encore de contenu.</Text>
+          ) : (
+            <RecipeMarkdown>{markdown}</RecipeMarkdown>
+          )}
         </ScrollView>
       )}
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({ content: { padding: 20, paddingBottom: 50 } } as const)
+const styles = StyleSheet.create({
+  content: { padding: 20, paddingBottom: 50 },
+  missing: { color: colors.muted, textAlign: 'center', paddingVertical: 40 },
+} as const)

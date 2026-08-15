@@ -1,68 +1,66 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
-import {
-  AuthError,
-  createRecipe,
-  createRecipeFile,
-  findRecipeFile,
-  readFile,
-  updateFile,
-} from '../api/drive'
+import { AuthError } from '../api/drive'
+import { getBody, getRecipe, revalidateRecipe, saveRecipe, useRecipe } from '../data/recipeStore'
 import { Button, ErrorBanner, Header, LoadingState, Screen } from '../components/ui'
-import { NEW_RECIPE_TEMPLATE, parseTime, parseTitle, titleToSlug } from '../lib/markdown'
+import { NEW_RECIPE_TEMPLATE } from '../lib/markdown'
 import { colors, fonts } from '../theme'
 import type { RecipeSummary } from '../types'
 
 type Props = {
-  recipe: RecipeSummary | null
-  rootId: string
+  folderId: string | null
   onSaved: (recipe: RecipeSummary) => void
   onCancel: () => void
   onAuthError: () => void
 }
 
-export function EditorScreen({ recipe, rootId, onSaved, onCancel, onAuthError }: Props) {
-  const isNew = !recipe
-  const [text, setText] = useState(isNew ? NEW_RECIPE_TEMPLATE : '')
-  const [loading, setLoading] = useState(!isNew)
+export function EditorScreen({ folderId, onSaved, onCancel, onAuthError }: Props) {
+  const isNew = !folderId
+  const recipe = useRecipe(folderId ?? '')
+  const cached = isNew ? null : getBody(recipe?.fileId ?? null)
+
+  const [text, setText] = useState(isNew ? NEW_RECIPE_TEMPLATE : (cached ?? ''))
+  const [loading, setLoading] = useState(!isNew && cached === null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Once the cook types, nothing may replace what is in the box.
+  const dirty = useRef(false)
 
   useEffect(() => {
-    if (!recipe) return
+    if (!folderId) return
     let mounted = true
-    async function load() {
-      try {
-        const id = recipe?.fileId ?? await findRecipeFile(recipe!.folderId)
-        const content = id ? await readFile(id) : NEW_RECIPE_TEMPLATE
-        if (mounted) setText(content)
-      } catch (caught) {
+    // Editing a shared recipe from a stale cache would silently clobber someone
+    // else's change on save, so confirm the body is current before seeding it.
+    revalidateRecipe(folderId)
+      .then(() => {
+        if (!mounted || dirty.current) return
+        const fresh = getBody(getRecipe(folderId)?.fileId ?? null)
+        if (fresh !== null) setText(fresh)
+      })
+      .catch((caught: unknown) => {
         if (caught instanceof AuthError) return onAuthError()
-        if (mounted) setError(caught instanceof Error ? caught.message : 'Lecture impossible')
-      } finally {
+        if (mounted && getBody(getRecipe(folderId)?.fileId ?? null) === null) {
+          setError(caught instanceof Error ? caught.message : 'Lecture impossible')
+        }
+      })
+      .finally(() => {
         if (mounted) setLoading(false)
-      }
+      })
+    return () => {
+      mounted = false
     }
-    void load()
-    return () => { mounted = false }
-  }, [recipe?.folderId])
+  }, [folderId])
+
+  function edit(next: string) {
+    dirty.current = true
+    setText(next)
+  }
 
   async function save() {
     setSaving(true)
     setError('')
     try {
-      const title = parseTitle(text, recipe?.slug ?? 'recette')
-      const time = parseTime(text)
-      if (!recipe) {
-        const slug = titleToSlug(title) || 'recette'
-        const created = await createRecipe(rootId, slug, text)
-        onSaved({ folderId: created.id, fileId: created.fileId, slug, title, time })
-      } else {
-        let fileId = recipe.fileId ?? await findRecipeFile(recipe.folderId)
-        if (fileId) await updateFile(fileId, text)
-        else fileId = await createRecipeFile(recipe.folderId, text)
-        onSaved({ ...recipe, fileId, title, time })
-      }
+      onSaved(await saveRecipe(recipe, text))
     } catch (caught) {
       if (caught instanceof AuthError) return onAuthError()
       setError(caught instanceof Error ? caught.message : 'Enregistrement impossible')
@@ -74,13 +72,19 @@ export function EditorScreen({ recipe, rootId, onSaved, onCancel, onAuthError }:
   return (
     <Screen>
       <Header title={isNew ? 'Nouvelle recette' : 'Modifier'} />
-      {loading ? <LoadingState /> : (
-        <KeyboardAvoidingView style={styles.content} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={58}>
+      {loading ? (
+        <LoadingState />
+      ) : (
+        <KeyboardAvoidingView
+          style={styles.content}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={58}
+        >
           <ErrorBanner message={error} />
           <TextInput
             style={styles.editor}
             value={text}
-            onChangeText={setText}
+            onChangeText={edit}
             multiline
             textAlignVertical="top"
             autoCapitalize="sentences"

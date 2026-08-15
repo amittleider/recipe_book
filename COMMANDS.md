@@ -25,6 +25,18 @@
 - `npx expo install --check`
     - Flags dependency versions that don't match the Expo SDK.
 
+## iPhone releases
+
+- `npm run release:ios`
+    - Creates a production iOS build and submits it to App Store Connect/TestFlight.
+    - EAS increments the iOS build number automatically, so every upload is valid.
+    - Requires the one-time setup in `IPHONE_INSTALL.md` and interactive Apple/Expo
+      authentication unless credentials have already been saved.
+
+- `npm run submit:ios`
+    - Submits the latest completed EAS iOS build without rebuilding it.
+    - Useful if the build succeeded but automatic submission did not.
+
 ## Occasional
 
 - `npm run pods`
