@@ -26,10 +26,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-secure-store',
     [
-      'expo-build-properties',
-      { ios: { buildReactNativeFromSource: true } },
-    ],
-    [
       '@react-native-google-signin/google-signin',
       { iosUrlScheme: reversedClientId },
     ],
