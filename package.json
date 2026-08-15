@@ -1,20 +1,25 @@
 {
   "name": "nos-recettes",
+  "version": "2.0.0",
   "private": true,
-  "version": "1.0.0",
-  "type": "module",
+  "main": "expo/AppEntry.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "expo start --dev-client",
+    "ios": "expo prebuild --platform ios && expo run:ios",
+    "android": "expo prebuild --platform android && expo run:android",
+    "prebuild": "expo prebuild",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "marked": "^12.0.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "@react-native-google-signin/google-signin": "^16.1.4",
+    "expo": "^57.0.13",
+    "expo-secure-store": "^57.0.1",
+    "expo-status-bar": "^57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.8"
+    "@types/react": "^19.2.18",
+    "typescript": "~6.0.3"
   }
 }

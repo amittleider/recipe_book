@@ -1,5 +1,8 @@
 node_modules
 dist
+.expo
+ios
+android
 .env
 .env.local
 *.local

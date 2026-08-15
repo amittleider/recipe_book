@@ -1,88 +1,94 @@
-# Nos Recettes — Recipe Book PWA
+# Nos Recettes — iOS app
 
-A personal recipe book PWA for two people. Recipes are markdown files stored in
-a Google Drive folder (one subfolder per recipe). No backend — everything runs
-client-side. See [CLAUDE.md](CLAUDE.md) for the full design spec.
+A native Expo/React Native recipe book. Recipes remain Markdown files in Google
+Drive, while Google Sign-In restores the user's account and refreshes access
+tokens through the native iOS SDK.
 
 ## Stack
 
-React + Vite • Google Drive REST API v3 • Google OAuth (GIS) • PWA (manifest +
-service worker) • GitHub Pages.
+- Expo SDK 57 + React Native + TypeScript
+- Native Google Sign-In for Google Drive authorization
+- iOS Keychain through Google Sign-In and `expo-secure-store`
+- Google Drive REST API v3
+- A small native renderer for the app's constrained recipe Markdown format
 
-## Setup
+The application code is shared with Android. Platform-specific authentication is
+kept behind `src/auth/googleAuth.ts` so Android's identity implementation can be
+changed later without changing recipe or screen code.
 
-1. **Install dependencies**
+## Google Cloud setup
 
-   ```sh
-   npm install
-   ```
+1. Enable the **Google Drive API** in Google Cloud Console.
+2. Configure the OAuth consent screen and add the two intended users while the
+   project is in Testing.
+3. Create an OAuth client with application type **iOS**:
+   - Bundle ID: `com.nosrecettes.app`
+   - Use the same bundle ID as `app.config.ts`.
+4. Copy `.env.example` to `.env` and set
+   `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` to that iOS client ID.
+5. The app currently requests the full `drive` scope because a native app has no
+   Google Picker equivalent that can grant `drive.file` access to an existing
+   shared folder. Limit the consent screen to the intended users and complete
+   any Google verification required before broader distribution.
 
-2. **Create a Google OAuth client**
-   - Go to <https://console.cloud.google.com/apis/credentials>.
-   - Enable the **Google Drive API** for your project.
-   - Create an **OAuth client ID** → *Web application*.
-   - Add **Authorized JavaScript origins**:
-     - `http://localhost:5173` (dev)
-     - `https://<your-user>.github.io` (production)
-   - Copy `.env.example` to `.env` and set `VITE_GOOGLE_CLIENT_ID`.
+The Expo config derives Google's reversed URL scheme from the iOS client ID.
+After changing the client ID, regenerate or rebuild the native project.
 
-3. **Enable the Picker API + create an API key** (for opening shared folders)
-   - Enable <https://console.cloud.google.com/apis/library/picker.googleapis.com>.
-   - Credentials → **Create credentials → API key**; restrict it to the Picker
-     API and your origins. Set it in `.env` as `VITE_GOOGLE_API_KEY`.
+## Install and run
 
-4. **Run locally**
-
-   ```sh
-   npm run dev
-   ```
-
-## Build & deploy
+Requirements: a Mac with Xcode and CocoaPods, Node.js, and an iOS simulator or
+registered physical device.
 
 ```sh
-npm run build      # outputs to dist/
-npm run preview    # preview the production build
+npm install
+cp .env.example .env
+# Edit .env with the real iOS OAuth client ID.
+npm run ios
 ```
 
-A GitHub Actions workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml))
-builds and publishes to GitHub Pages on every push to `master`. Add your client
-ID as a repository secret named `VITE_GOOGLE_CLIENT_ID`, and set
-**Settings → Pages → Source** to *GitHub Actions*.
+Google Sign-In includes native code, so this app requires an Expo development
+build and does not run in Expo Go. `npm run ios` generates the native project and
+opens the simulator build. To start Metro for an already-installed development
+build, run `npm start`.
 
-## How it works
+## Verification
 
-- **Auth** — Google Identity Services issues short-lived access tokens with the
-  `drive.file` scope. The token + expiry live in `localStorage`; on load the app
-  silently refreshes, falling back to the sign-in screen if consent is needed.
+```sh
+npm run typecheck
+EXPO_NO_TELEMETRY=1 npx expo install --check
+```
 
-  > Note: a pure client-side app can't get a long-lived *refresh token* (that
-  > needs a backend with a client secret). GIS silent re-auth provides the same
-  > "stay signed in" behaviour the spec describes.
+## Persistent sign-in
 
-- **Folder picker** — because `drive.file` only exposes folders the app created
-  or opened, the picker lists app-accessible folders and lets you create a new
-  root (e.g. *Nos Recettes*). The chosen folder ID is saved to `localStorage`.
+The app does not store Google access tokens in JavaScript storage. The Google
+Sign-In iOS SDK owns its durable credential in Keychain. At startup,
+`restoreAuthSession()` restores the previous Google account; `getAccessToken()`
+asks the SDK for a current token before every Drive request. The selected Drive
+folder and non-sensitive session metadata are also stored with SecureStore.
 
-- **Sharing one folder between two people** — the second user can't see a folder
-  the first user created (drive.file is per-user). They tap **Ouvrir un dossier
-  partagé**, which launches the **Google Picker**; selecting the shared folder
-  grants their token `drive.file` access to it, pointing both users at the same
-  root. (Share the folder via Google Drive first.)
-
-- **Recipes** — each recipe is a subfolder containing `recipe.md`. The list
-  reads each file to show the title (first `# heading`) and time (`**Time:**`).
+Signing out clears the local native session. It does not revoke the user's grant
+at Google, so signing back in is quick.
 
 ## Project layout
 
+```text
+App.tsx                         App state and screen routing
+src/auth/googleAuth.ts         Native auth and Keychain-backed restoration
+src/storage/keychain.ts        Persistent root-folder configuration
+src/api/drive.ts               Google Drive REST repository
+src/lib/markdown.ts            Recipe parsing and Markdown template
+src/screens/                    Native iOS/Android screens
+src/components/ui.tsx          Shared native UI primitives
+app.config.ts                  Expo, bundle ID, and native plugins
 ```
-src/
-  auth/googleAuth.js   OAuth via Google Identity Services
-  api/drive.js         Google Drive REST wrapper
-  lib/markdown.js      markdown render + title/time/slug parsing
-  components/          AuthScreen, FolderPicker, RecipeList, RecipeDetail, Editor
-  App.jsx              screen routing + config persistence
-public/
-  manifest.json        PWA manifest
-  sw.js                offline shell service worker
-  icon.svg             app icon
+
+## Google Drive format
+
+```text
+/Nos Recettes/
+  poulet-roti-aux-herbes/
+    recipe.md
 ```
+
+Each recipe is a subfolder containing one `recipe.md`. This remains compatible
+with the previous web application.
