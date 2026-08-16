@@ -2,7 +2,8 @@ import { Fragment, type ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { colors, fonts } from '../theme'
 
-function inlineText(value: string): ReactNode[] {
+/** Bold and italic runs inside a single line, shared with the recipe view. */
+export function inlineText(value: string): ReactNode[] {
   const parts = value.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g)
   return parts.filter(Boolean).map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
@@ -22,11 +23,11 @@ export function RecipeMarkdown({ children }: { children: string }) {
         const trimmed = line.trim()
         if (!trimmed) return <View key={index} style={styles.space} />
         if (/^---+$/.test(trimmed)) return <View key={index} style={styles.rule} />
-        if (trimmed.startsWith('## ')) {
-          return <Text key={index} style={styles.heading2}>{inlineText(trimmed.slice(3))}</Text>
-        }
-        if (trimmed.startsWith('# ')) {
-          return <Text key={index} style={styles.heading1}>{inlineText(trimmed.slice(2))}</Text>
+        const heading = trimmed.match(/^(#{1,6})\s+(.*)$/)
+        if (heading?.[1]) {
+          const level = heading[1].length
+          const style = level === 1 ? styles.heading1 : level === 2 ? styles.heading2 : styles.heading3
+          return <Text key={index} style={style}>{inlineText(heading[2] ?? '')}</Text>
         }
         const bullet = trimmed.match(/^[-*]\s+(.+)$/)
         if (bullet?.[1]) {
@@ -46,6 +47,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, color: colors.text, fontSize: 16, lineHeight: 24 },
   heading1: { color: colors.text, fontFamily: fonts.serif, fontSize: 30, lineHeight: 36, marginBottom: 4 },
   heading2: { color: colors.text, fontFamily: fonts.serif, fontSize: 22, lineHeight: 28, marginTop: 18, marginBottom: 4 },
+  heading3: { color: colors.text, fontFamily: fonts.serif, fontSize: 18, lineHeight: 24, marginTop: 14, marginBottom: 2 },
   bold: { fontWeight: '700' },
   em: { fontStyle: 'italic', color: colors.muted },
   listRow: { flexDirection: 'row', alignItems: 'flex-start', paddingLeft: 6, marginVertical: 3 },

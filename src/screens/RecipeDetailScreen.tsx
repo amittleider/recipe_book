@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text } from 'react-native'
 import { AuthError } from '../api/drive'
 import { getBody, revalidateRecipe, useRecipe } from '../data/recipeStore'
 import { Button, ErrorBanner, Header, LoadingState, Screen } from '../components/ui'
-import { RecipeMarkdown } from '../components/RecipeMarkdown'
+import { RecipeView } from '../components/RecipeView'
 import { colors } from '../theme'
 
 type Props = {
@@ -53,7 +53,7 @@ export function RecipeDetailScreen({ folderId, onBack, onEdit, onAuthError }: Pr
           {markdown === null ? (
             <Text style={styles.missing}>Cette recette n’a pas encore de contenu.</Text>
           ) : (
-            <RecipeMarkdown>{markdown}</RecipeMarkdown>
+            <RecipeView markdown={markdown} />
           )}
         </ScrollView>
       )}
