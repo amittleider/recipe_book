@@ -9,6 +9,7 @@ import {
   View,
   type PressableProps,
 } from 'react-native'
+import { TrashIcon } from './TrashIcon'
 import { colors, fonts } from '../theme'
 
 export function Screen({ children, scroll = false }: PropsWithChildren<{ scroll?: boolean }>) {
@@ -52,6 +53,21 @@ export function Button({ children, variant = 'primary', busy, style, ...props }:
           variant === 'link' ? styles.linkButtonText : undefined,
         ]}>{children}</Text>
       )}
+    </Pressable>
+  )
+}
+
+/** Compact terra cotta trash affordance, sized for a header slot. */
+export function DeleteButton({ onPress, busy = false, label = 'Supprimer' }: { onPress: () => void; busy?: boolean; label?: string }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      disabled={busy}
+      style={({ pressed }) => [styles.deleteButton, pressed ? styles.pressed : undefined]}
+    >
+      {busy ? <ActivityIndicator color={colors.dangerText} /> : <TrashIcon size={20} />}
     </Pressable>
   )
 }
@@ -105,6 +121,14 @@ const styles = StyleSheet.create({
   buttonText: { color: colors.background, fontSize: 15, fontWeight: '600' },
   secondaryButtonText: { color: colors.text },
   linkButtonText: { color: colors.text, textDecorationLine: 'underline', fontWeight: '400' },
+  deleteButton: {
+    width: 48,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.danger,
+  },
   pressed: { opacity: 0.72 },
   disabled: { opacity: 0.45 },
   error: {

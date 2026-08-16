@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native'
 import { AuthError } from '../api/drive'
-import { getBody, getRecipe, revalidateRecipe, saveRecipe, useRecipe } from '../data/recipeStore'
-import { Button, ErrorBanner, Header, LoadingState, Screen } from '../components/ui'
+import { deleteRecipe, getBody, getRecipe, revalidateRecipe, saveRecipe, useRecipe } from '../data/recipeStore'
+import { Button, DeleteButton, ErrorBanner, Header, LoadingState, Screen } from '../components/ui'
 import { NEW_RECIPE_TEMPLATE } from '../lib/markdown'
 import { colors, fonts } from '../theme'
 import type { RecipeSummary } from '../types'
@@ -11,10 +11,11 @@ type Props = {
   folderId: string | null
   onSaved: (recipe: RecipeSummary) => void
   onCancel: () => void
+  onDeleted: () => void
   onAuthError: () => void
 }
 
-export function EditorScreen({ folderId, onSaved, onCancel, onAuthError }: Props) {
+export function EditorScreen({ folderId, onSaved, onCancel, onDeleted, onAuthError }: Props) {
   const isNew = !folderId
   const recipe = useRecipe(folderId ?? '')
   const cached = isNew ? null : getBody(recipe?.fileId ?? null)
@@ -22,6 +23,7 @@ export function EditorScreen({ folderId, onSaved, onCancel, onAuthError }: Props
   const [text, setText] = useState(isNew ? NEW_RECIPE_TEMPLATE : (cached ?? ''))
   const [loading, setLoading] = useState(!isNew && cached === null)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   // Once the cook types, nothing may replace what is in the box.
   const dirty = useRef(false)
@@ -69,9 +71,42 @@ export function EditorScreen({ folderId, onSaved, onCancel, onAuthError }: Props
     }
   }
 
+  async function remove() {
+    if (!folderId) return
+    setDeleting(true)
+    setError('')
+    try {
+      await deleteRecipe(folderId)
+      onDeleted()
+    } catch (caught) {
+      if (caught instanceof AuthError) return onAuthError()
+      setError(caught instanceof Error ? caught.message : 'Suppression impossible')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // The folder is shared, so deleting takes the recipe away from everyone.
+  // One confirmation before that happens.
+  function confirmDelete() {
+    Alert.alert(
+      'Supprimer la recette ?',
+      `« ${recipe?.title ?? 'Cette recette'} » sera déplacée vers la corbeille de Google Drive.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Supprimer', style: 'destructive', onPress: () => void remove() },
+      ],
+    )
+  }
+
+  const busy = saving || deleting
+
   return (
     <Screen>
-      <Header title={isNew ? 'Nouvelle recette' : 'Modifier'} />
+      <Header
+        title={isNew ? 'Nouvelle recette' : 'Modifier'}
+        right={isNew ? undefined : <DeleteButton onPress={confirmDelete} busy={deleting} />}
+      />
       {loading ? (
         <LoadingState />
       ) : (
@@ -91,8 +126,8 @@ export function EditorScreen({ folderId, onSaved, onCancel, onAuthError }: Props
             autoCorrect
           />
           <View style={styles.actions}>
-            <Button style={styles.action} variant="secondary" onPress={onCancel} disabled={saving}>Annuler</Button>
-            <Button style={styles.action} onPress={save} disabled={saving} busy={saving}>Enregistrer</Button>
+            <Button style={styles.action} variant="secondary" onPress={onCancel} disabled={busy}>Annuler</Button>
+            <Button style={styles.action} onPress={save} disabled={busy} busy={saving}>Enregistrer</Button>
           </View>
         </KeyboardAvoidingView>
       )}

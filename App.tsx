@@ -143,6 +143,13 @@ export default function App() {
             setCurrentFolderId(recipe.folderId)
             setScreen('detail')
           }}
+          // The detail screen behind the editor now has nothing to show, so a
+          // delete lands back on the cookbook rather than an empty recipe.
+          onDeleted={() => {
+            setCurrentFolderId(null)
+            setEditingFolderId(null)
+            setScreen('list')
+          }}
           onAuthError={handleSessionExpired}
         />
       )}

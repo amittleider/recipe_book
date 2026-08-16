@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native'
+import { memo, useCallback, useMemo, useState } from 'react'
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native'
 import { AuthError } from '../api/drive'
-import { sync, useRecipeStore } from '../data/recipeStore'
+import { deleteRecipe, sync, useRecipeStore } from '../data/recipeStore'
 import type { AuthUser } from '../auth/googleAuth'
 import { Button, ErrorBanner, Header, Screen } from '../components/ui'
+import { SwipeableRow } from '../components/SwipeableRow'
 import { colors, fonts } from '../theme'
 import type { RecipeSummary } from '../types'
 
@@ -15,10 +16,58 @@ type Props = {
   onAuthError: () => void
 }
 
+type RowProps = {
+  recipe: RecipeSummary
+  open: boolean
+  deleting: boolean
+  onOpen: (recipe: RecipeSummary) => void
+  onOpenChange: (folderId: string, open: boolean) => void
+  onDelete: (recipe: RecipeSummary) => void
+}
+
+/**
+ * Memoised so opening one row's action does not re-render the whole cookbook,
+ * and so each row's gesture callbacks stay stable between renders.
+ */
+const RecipeRow = memo(function RecipeRow({ recipe, open, deleting, onOpen, onOpenChange, onDelete }: RowProps) {
+  const handleOpenChange = useCallback(
+    (next: boolean) => onOpenChange(recipe.folderId, next),
+    [onOpenChange, recipe.folderId],
+  )
+  const handleDelete = useCallback(() => onDelete(recipe), [onDelete, recipe])
+  // While the trash is showing, a tap on the card puts it away rather than
+  // opening a recipe the cook was about to delete.
+  const handlePress = useCallback(
+    () => (open ? onOpenChange(recipe.folderId, false) : onOpen(recipe)),
+    [onOpen, onOpenChange, open, recipe],
+  )
+
+  return (
+    <SwipeableRow
+      open={open}
+      onOpenChange={handleOpenChange}
+      onDelete={handleDelete}
+      busy={deleting}
+      deleteLabel={`Supprimer ${recipe.title}`}
+    >
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed ? styles.pressed : undefined]}
+        onPress={handlePress}
+      >
+        <Text style={styles.recipeName}>{recipe.title}</Text>
+        {!!recipe.time && <Text style={styles.meta}>⏱ {recipe.time}</Text>}
+      </Pressable>
+    </SwipeableRow>
+  )
+})
+
 export function RecipeListScreen({ user, onOpen, onNew, onSignOut, onAuthError }: Props) {
   const { recipes, syncing, error } = useRecipeStore()
   const [refreshing, setRefreshing] = useState(false)
   const [query, setQuery] = useState('')
+  const [openFolderId, setOpenFolderId] = useState<string | null>(null)
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState('')
 
   // The list is always rendered from cache; refreshing only revalidates.
   const refresh = useCallback(async () => {
@@ -31,6 +80,45 @@ export function RecipeListScreen({ user, onOpen, onNew, onSignOut, onAuthError }
       setRefreshing(false)
     }
   }, [onAuthError])
+
+  const remove = useCallback(
+    async (recipe: RecipeSummary) => {
+      setDeletingFolderId(recipe.folderId)
+      setDeleteError('')
+      try {
+        await deleteRecipe(recipe.folderId)
+        setOpenFolderId(null)
+      } catch (caught) {
+        if (caught instanceof AuthError) return onAuthError()
+        setDeleteError(caught instanceof Error ? caught.message : 'Suppression impossible')
+      } finally {
+        setDeletingFolderId(null)
+      }
+    },
+    [onAuthError],
+  )
+
+  // The folder is shared, so a mis-swipe would take the recipe away from
+  // everyone. One confirmation before that happens.
+  const confirmDelete = useCallback(
+    (recipe: RecipeSummary) => {
+      Alert.alert(
+        'Supprimer la recette ?',
+        `« ${recipe.title} » sera déplacée vers la corbeille de Google Drive.`,
+        [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Supprimer', style: 'destructive', onPress: () => void remove(recipe) },
+        ],
+      )
+    },
+    [remove],
+  )
+
+  const handleOpenChange = useCallback((folderId: string, open: boolean) => {
+    setOpenFolderId(open ? folderId : null)
+  }, [])
+
+  const closeOpenRow = useCallback(() => setOpenFolderId(null), [])
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr')
@@ -51,25 +139,27 @@ export function RecipeListScreen({ user, onOpen, onNew, onSignOut, onAuthError }
           placeholderTextColor={colors.muted}
           returnKeyType="search"
         />
-        <ErrorBanner message={error} />
+        <ErrorBanner message={deleteError || error} />
         <FlatList
           data={filtered}
           keyExtractor={(recipe) => recipe.folderId}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+          onScrollBeginDrag={closeOpenRow}
           ListEmptyComponent={
             <Text style={styles.empty}>
               {recipes.length ? 'Aucun résultat.' : 'Aucune recette. Touchez « + Nouvelle ».'}
             </Text>
           }
           renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [styles.card, pressed ? styles.pressed : undefined]}
-              onPress={() => onOpen(item)}
-            >
-              <Text style={styles.recipeName}>{item.title}</Text>
-              {!!item.time && <Text style={styles.meta}>⏱ {item.time}</Text>}
-            </Pressable>
+            <RecipeRow
+              recipe={item}
+              open={openFolderId === item.folderId}
+              deleting={deletingFolderId === item.folderId}
+              onOpen={onOpen}
+              onOpenChange={handleOpenChange}
+              onDelete={confirmDelete}
+            />
           )}
           ListFooterComponent={
             <View style={styles.footer}>
