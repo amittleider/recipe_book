@@ -70,7 +70,8 @@ The least bureaucratic option for two people is an internal TestFlight group:
    as an App Store Connect user with the **Developer** role and access to Nos
    Recettes. This gives access to the app's developer-facing TestFlight metadata,
    so only use this route for someone you trust.
-2. In **Nos Recettes → TestFlight**, create an internal group named `Family`.
+2. In **Nos Recettes → TestFlight**, open the `Team (Expo)` internal group that
+   EAS created during the first submission.
 3. Enable **automatic distribution** for the group and add both App Store Connect
    users.
 4. On each iPhone, install Apple's free **TestFlight** app, open the email invite,
@@ -93,7 +94,7 @@ npm run release:ios
 
 That command builds the production app, automatically increments its build
 number, and uploads it to App Store Connect. With automatic distribution enabled,
-the new build becomes available to the `Family` group after Apple finishes
+the new build becomes available to the `Team (Expo)` group after Apple finishes
 processing it. TestFlight can update both phones automatically, or either person
 can open TestFlight and tap **Update**.
 

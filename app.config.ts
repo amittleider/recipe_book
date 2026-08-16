@@ -9,10 +9,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Nos Recettes',
   slug: 'nos-recettes',
+  owner: 'amittleider',
   version: '2.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   scheme: 'nosrecettes',
+  extra: {
+    ...config.extra,
+    eas: {
+      projectId: 'c6e97315-fe8d-4cb1-b31b-0543b30473da',
+    },
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.nosrecettes.app',
