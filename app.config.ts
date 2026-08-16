@@ -11,6 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'nos-recettes',
   owner: 'amittleider',
   version: '2.0.0',
+  icon: './assets/icon.png',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   scheme: 'nosrecettes',
