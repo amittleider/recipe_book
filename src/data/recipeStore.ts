@@ -9,6 +9,7 @@ import {
   listRecipeFiles,
   listRecipeFolders,
   readFile,
+  trashRecipe,
   updateFile,
   type DriveFileMeta,
 } from '../api/drive'
@@ -17,6 +18,7 @@ import {
   bodyExists,
   buildManifest,
   clearAllCaches,
+  deleteBody,
   dropOtherRoots,
   pruneBodies,
   readBody,
@@ -75,7 +77,9 @@ let inFlightSync: Promise<void> | null = null
 
 /**
  * Folders written locally while a sync is in flight. That sync's folder listing
- * predates the write, so its result must not roll the write back.
+ * predates the write, so its result must not roll the write back. Deletions
+ * count as writes: the folder is recorded here and dropped from `state.recipes`,
+ * which together tell the sync to leave it out rather than restore it.
  */
 let writesDuringSync: Set<string> | null = null
 
@@ -289,9 +293,12 @@ async function runSync(rootId: string) {
   // after this sync read the folder listing.
   const localWins = writesDuringSync ?? new Set<string>()
   const local = new Map(state.recipes.map((recipe) => [recipe.folderId, recipe]))
-  const recipes = folders.map((folder) => {
-    const localRecipe = localWins.has(folder.id) ? local.get(folder.id) : undefined
-    return localRecipe ?? resolved.get(folder.id)!
+  const recipes = folders.flatMap((folder) => {
+    if (!localWins.has(folder.id)) return [resolved.get(folder.id)!]
+    // A folder written locally keeps the local entry. A folder deleted locally
+    // no longer has one, and must stay gone rather than fall back to Drive.
+    const localRecipe = local.get(folder.id)
+    return localRecipe ? [localRecipe] : []
   })
   for (const folderId of localWins) {
     if (folderIds.has(folderId)) continue
@@ -371,6 +378,8 @@ export async function revalidateRecipe(folderId: string): Promise<void> {
       })
     : null
   if (!meta) meta = await findRecipeFile(folderId)
+  // A delete that landed while these requests were in flight must not be undone.
+  if (!state.recipes.some((recipe) => recipe.folderId === folderId)) return
   if (!meta) {
     if (current?.fileId) upsert({ ...current, fileId: null, validator: '' })
     return
@@ -387,6 +396,8 @@ export async function revalidateRecipe(folderId: string): Promise<void> {
 
   const markdown = await readFile(meta.id)
   storeBody(rootId, meta.id, markdown)
+  // A delete that landed while this request was in flight must not be undone.
+  if (!state.recipes.some((recipe) => recipe.folderId === folderId)) return
   upsert({
     folderId,
     fileId: meta.id,
@@ -432,6 +443,29 @@ export async function saveRecipe(existing: RecipeSummary | null, text: string): 
     ? await updateFile(fileId, text)
     : await createRecipeFile(existing.folderId, text)
   return commitSave({ folderId: existing.folderId, slug: existing.slug, title, time }, saved, text)
+}
+
+/**
+ * Deletes a recipe, Drive first and cache second.
+ *
+ * The order matters: a failed request leaves the cookbook untouched everywhere,
+ * whereas dropping the local copy first would hide a recipe on this device that
+ * every other device still shows.
+ */
+export async function deleteRecipe(folderId: string): Promise<void> {
+  const rootId = state.rootId
+  const recipe = state.recipes.find((entry) => entry.folderId === folderId)
+  await trashRecipe(folderId)
+
+  writesDuringSync?.add(folderId)
+  const recipes = state.recipes.filter((entry) => entry.folderId !== folderId)
+  if (recipe?.fileId) {
+    bodies.delete(recipe.fileId)
+    if (rootId) deleteBody(rootId, recipe.fileId)
+  }
+  const syncedAt = state.syncedAt || Date.now()
+  writeManifest(buildManifest(rootId, recipes, syncedAt))
+  setState({ recipes, syncedAt })
 }
 
 function commitSave(

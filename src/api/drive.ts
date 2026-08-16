@@ -30,6 +30,14 @@ export type DriveFileMeta = {
   version?: string
 }
 
+/** A failed Drive call, carrying the status so callers can tolerate specific ones. */
+export class DriveError extends Error {
+  constructor(readonly status: number, detail: string) {
+    super(`Google Drive (${status}): ${detail}`)
+    this.name = 'DriveError'
+  }
+}
+
 async function request(url: string, options: RequestInit = {}) {
   const accessToken = await getAccessToken()
   const response = await fetch(url, {
@@ -42,7 +50,7 @@ async function request(url: string, options: RequestInit = {}) {
   if (response.status === 401) throw new AuthError('Google session expired')
   if (!response.ok) {
     const detail = (await response.text().catch(() => '')).slice(0, 300)
-    throw new Error(`Google Drive (${response.status}): ${detail}`)
+    throw new DriveError(response.status, detail)
   }
   return response
 }
@@ -205,6 +213,29 @@ export async function updateFile(fileId: string, content: string): Promise<Drive
     body: content,
   })
   return response.json() as Promise<DriveFileMeta>
+}
+
+/**
+ * Deletes a recipe by moving its whole folder to Drive's trash.
+ *
+ * Trashing rather than permanently deleting matters for a shared cookbook: the
+ * folder is recoverable from Drive for anyone who deletes the wrong recipe, and
+ * every query in this module already filters on `trashed=false`, so the recipe
+ * disappears from each device on its next revalidation regardless.
+ */
+export async function trashRecipe(folderId: string): Promise<void> {
+  const params = new URLSearchParams({ fields: 'id', supportsAllDrives: 'true' })
+  try {
+    await request(`${API}/files/${encodeURIComponent(folderId)}?${params}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trashed: true }),
+    })
+  } catch (caught) {
+    // Someone else already deleted it. The caller's intent is satisfied.
+    if (caught instanceof DriveError && caught.status === 404) return
+    throw caught
+  }
 }
 
 export async function createRecipe(rootId: string, slug: string, content: string) {
