@@ -38,19 +38,21 @@ import type { RecipeSummary } from '../types'
 
 type Props = {
   folderId: string | null
+  /** A recipe read off a web page, used to seed a new one instead of a blank form. */
+  initialDocument?: RecipeDocument | null
   onSaved: (recipe: RecipeSummary) => void
   onCancel: () => void
   onDeleted: () => void
   onAuthError: () => void
 }
 
-export function EditorScreen({ folderId, onSaved, onCancel, onDeleted, onAuthError }: Props) {
+export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onDeleted, onAuthError }: Props) {
   const isNew = !folderId
   const recipe = useRecipe(folderId ?? '')
   const cached = isNew ? null : getBody(recipe?.fileId ?? null)
 
   const [document, setDocument] = useState<RecipeDocument>(() =>
-    isNew ? blankDocument() : parse(cached ?? ''),
+    isNew ? (initialDocument ?? blankDocument()) : parse(cached ?? ''),
   )
   const [loading, setLoading] = useState(!isNew && cached === null)
   const [saving, setSaving] = useState(false)

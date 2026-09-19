@@ -12,6 +12,7 @@ type Props = {
   user: AuthUser | null
   onOpen: (recipe: RecipeSummary) => void
   onNew: () => void
+  onImport: () => void
   onSignOut: () => void
   onAuthError: () => void
 }
@@ -61,7 +62,7 @@ const RecipeRow = memo(function RecipeRow({ recipe, open, deleting, onOpen, onOp
   )
 })
 
-export function RecipeListScreen({ user, onOpen, onNew, onSignOut, onAuthError }: Props) {
+export function RecipeListScreen({ user, onOpen, onNew, onImport, onSignOut, onAuthError }: Props) {
   const { recipes, syncing, error } = useRecipeStore()
   const [refreshing, setRefreshing] = useState(false)
   const [query, setQuery] = useState('')
@@ -114,6 +115,16 @@ export function RecipeListScreen({ user, onOpen, onNew, onSignOut, onAuthError }
     [remove],
   )
 
+  // Adding a recipe now has two ways in. The choice lives behind the existing
+  // button rather than a second one in the header, which has room for one.
+  const chooseHowToAdd = useCallback(() => {
+    Alert.alert('Ajouter une recette', undefined, [
+      { text: 'Partir de zéro', onPress: onNew },
+      { text: 'Importer depuis un lien', onPress: onImport },
+      { text: 'Annuler', style: 'cancel' },
+    ])
+  }, [onNew, onImport])
+
   const handleOpenChange = useCallback((folderId: string, open: boolean) => {
     setOpenFolderId(open ? folderId : null)
   }, [])
@@ -129,7 +140,7 @@ export function RecipeListScreen({ user, onOpen, onNew, onSignOut, onAuthError }
 
   return (
     <Screen>
-      <Header title="Nos Recettes" right={<Button onPress={onNew}>+ Nouvelle</Button>} />
+      <Header title="Nos Recettes" right={<Button onPress={chooseHowToAdd}>+ Nouvelle</Button>} />
       <View style={styles.content}>
         <TextInput
           style={styles.search}
