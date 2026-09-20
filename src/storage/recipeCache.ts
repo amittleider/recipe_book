@@ -14,6 +14,8 @@ import type { RecipeSummary } from '../types'
 const CACHE_ROOT = 'recipe-cache'
 const MANIFEST_NAME = 'index.json'
 const BODIES_DIR = 'bodies'
+const MEDIA_DIR = 'media'
+const THUMBS_DIR = 'thumbs'
 const MANIFEST_VERSION = 1
 
 export type CachedRecipe = RecipeSummary & {
@@ -33,6 +35,15 @@ function safeName(id: string) {
   return id.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 120)
 }
 
+/**
+ * The same idea for a media file name, except the extension is kept: the image
+ * and video players read the type off the path, so a cached `.mp4` that lost its
+ * suffix would not play. Leading dots go, so no name can climb out of its folder.
+ */
+function safeFileName(name: string) {
+  return name.replace(/[^A-Za-z0-9_.-]/g, '_').replace(/^\.+/, '_').slice(0, 120) || '_'
+}
+
 function rootDirectory(rootId: string) {
   return new Directory(Paths.document, CACHE_ROOT, safeName(rootId))
 }
@@ -43,6 +54,19 @@ function bodiesDirectory(rootId: string) {
 
 function bodyFile(rootId: string, fileId: string) {
   return new File(bodiesDirectory(rootId), `${safeName(fileId)}.md`)
+}
+
+/**
+ * Media lives in directories *beside* `bodies/`, never inside it: `pruneBodies`
+ * deletes every file it does not recognise, and a photo filed under `bodies/`
+ * would be swept away on the next sync.
+ */
+function mediaDirectory(rootId: string, folderId: string) {
+  return new Directory(rootDirectory(rootId), MEDIA_DIR, safeName(folderId))
+}
+
+function thumbsDirectory(rootId: string) {
+  return new Directory(rootDirectory(rootId), THUMBS_DIR)
 }
 
 function ensureDirectory(directory: Directory) {
@@ -121,6 +145,134 @@ export function pruneBodies(rootId: string, keepFileIds: Iterable<string>) {
     const directory = bodiesDirectory(rootId)
     if (!directory.exists) return
     const keep = new Set(Array.from(keepFileIds, (fileId) => `${safeName(fileId)}.md`))
+    for (const entry of directory.list()) {
+      if (entry instanceof File && !keep.has(entry.name)) entry.delete()
+    }
+  } catch {
+    // Ignored.
+  }
+}
+
+// --- media ------------------------------------------------------------------
+
+/** The local file for one recipe's photo, whether or not it has been downloaded. */
+export function mediaFile(rootId: string, folderId: string, name: string): File {
+  return new File(mediaDirectory(rootId, folderId), safeFileName(name))
+}
+
+export function mediaExists(rootId: string, folderId: string, name: string): boolean {
+  try {
+    return mediaFile(rootId, folderId, name).exists
+  } catch {
+    return false
+  }
+}
+
+/** Where a download should land, with the directory guaranteed to exist. */
+export function prepareMediaFile(rootId: string, folderId: string, name: string): File {
+  const file = mediaFile(rootId, folderId, name)
+  ensureDirectory(file.parentDirectory)
+  return file
+}
+
+/** Files the cook just picked are copied in, so the picker's temporary copy can go. */
+export function adoptMedia(rootId: string, folderId: string, name: string, source: File) {
+  const destination = prepareMediaFile(rootId, folderId, name)
+  if (destination.exists) destination.delete()
+  source.copySync(destination)
+}
+
+export function deleteMedia(rootId: string, folderId: string, name: string) {
+  try {
+    const file = mediaFile(rootId, folderId, name)
+    if (file.exists) file.delete()
+  } catch {
+    // Ignored.
+  }
+}
+
+/** Moves a draft recipe's staged media under the folder Drive just gave it. */
+export function moveMediaFolder(rootId: string, fromFolderId: string, toFolderId: string) {
+  try {
+    const from = mediaDirectory(rootId, fromFolderId)
+    if (!from.exists) return
+    const to = mediaDirectory(rootId, toFolderId)
+    ensureDirectory(to)
+    for (const entry of from.list()) {
+      if (entry instanceof File) entry.moveSync(new File(to, entry.name))
+    }
+    from.delete()
+  } catch {
+    // Ignored: the bytes are still on Drive or still queued, only the cache moved.
+  }
+}
+
+/** Drops every cached byte for one recipe, when the recipe itself goes. */
+export function clearMedia(rootId: string, folderId: string) {
+  try {
+    const directory = mediaDirectory(rootId, folderId)
+    if (directory.exists) directory.delete()
+  } catch {
+    // Ignored.
+  }
+}
+
+export function thumbFile(rootId: string, fileId: string): File {
+  return new File(thumbsDirectory(rootId), `${safeName(fileId)}.img`)
+}
+
+export function thumbExists(rootId: string, fileId: string): boolean {
+  try {
+    return thumbFile(rootId, fileId).exists
+  } catch {
+    return false
+  }
+}
+
+export function prepareThumbFile(rootId: string, fileId: string): File {
+  const file = thumbFile(rootId, fileId)
+  ensureDirectory(file.parentDirectory)
+  return file
+}
+
+/**
+ * Drops cached media for recipes and files the cookbook no longer has.
+ *
+ * `keep` maps a folder id to the names it still holds. A name that is in the
+ * map but not yet on Drive — a photo taken offline — is kept like any other:
+ * its local copy is the *only* copy, so pruning it would lose the picture.
+ */
+export function pruneMedia(rootId: string, keep: Map<string, Set<string>>) {
+  try {
+    const directory = new Directory(rootDirectory(rootId), MEDIA_DIR)
+    if (!directory.exists) return
+    const wanted = new Map(
+      Array.from(keep, ([folderId, names]) => [
+        safeName(folderId),
+        new Set(Array.from(names, safeFileName)),
+      ]),
+    )
+    for (const entry of directory.list()) {
+      if (!(entry instanceof Directory)) continue
+      const names = wanted.get(entry.name)
+      if (!names) {
+        entry.delete()
+        continue
+      }
+      for (const child of entry.list()) {
+        if (child instanceof File && !names.has(child.name)) child.delete()
+      }
+    }
+  } catch {
+    // Ignored.
+  }
+}
+
+export function pruneThumbs(rootId: string, keepFileIds: Iterable<string>) {
+  try {
+    const directory = thumbsDirectory(rootId)
+    if (!directory.exists) return
+    const keep = new Set(Array.from(keepFileIds, (fileId) => `${safeName(fileId)}.img`))
     for (const entry of directory.list()) {
       if (entry instanceof File && !keep.has(entry.name)) entry.delete()
     }

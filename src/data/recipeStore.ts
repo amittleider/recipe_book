@@ -1,33 +1,38 @@
-import { useSyncExternalStore } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import {
   AuthError,
   createRecipe as createDriveRecipe,
   createRecipeFile,
   fileValidator,
   findRecipeFile,
-  getFileMeta,
-  listRecipeFiles,
+  listFolderFiles,
   listRecipeFolders,
+  pickRecipeFile,
   readFile,
   trashRecipe,
   updateFile,
   type DriveFileMeta,
 } from '../api/drive'
-import { parseTime, parseTitle, slugToTitle, titleToSlug } from '../lib/markdown'
+import { parseMedia, parseTags, parseTime, parseTitle, slugToTitle, titleToSlug } from '../lib/markdown'
+import { isMediaMime } from '../lib/media'
+import { collectTags } from '../lib/tags'
 import {
   bodyExists,
   buildManifest,
   clearAllCaches,
+  clearMedia,
   deleteBody,
   dropOtherRoots,
   pruneBodies,
+  pruneMedia,
+  pruneThumbs,
   readBody,
   readManifest,
   writeBody,
   writeManifest,
   type CachedRecipe,
 } from '../storage/recipeCache'
-import type { RecipeSummary } from '../types'
+import type { RecipeMedia, RecipeSummary } from '../types'
 
 /**
  * The single source of truth the screens read from.
@@ -74,6 +79,15 @@ let state: StoreState = EMPTY_STATE
 const listeners = new Set<() => void>()
 const bodies = new Map<string, string>()
 let inFlightSync: Promise<void> | null = null
+
+/**
+ * Thumbnail links from the last listing, in memory only.
+ *
+ * Drive hands these out alongside every other field, so they cost nothing to
+ * collect, but they expire after a few hours — writing them to the manifest
+ * would persist something guaranteed to be wrong by tomorrow.
+ */
+const thumbnailLinks = new Map<string, string>()
 
 /**
  * Folders written locally while a sync is in flight. That sync's folder listing
@@ -133,9 +147,105 @@ function hasBody(rootId: string, fileId: string) {
   return bodies.has(fileId) || bodyExists(rootId, fileId)
 }
 
+/** The most recent thumbnail link Drive offered for a file, if it is still held. */
+export function getThumbnailLink(fileId: string): string {
+  return thumbnailLinks.get(fileId) ?? ''
+}
+
+/** The folder the cookbook is pointed at, for the stores layered on top of this one. */
+export function getRootId(): string {
+  return state.rootId
+}
+
+/** The whole cookbook, outside of React's render cycle. */
+export function getRecipes(): CachedRecipe[] {
+  return state.recipes
+}
+
 /** Current entry for a folder, outside of React's render cycle. */
 export function getRecipe(folderId: string): CachedRecipe | null {
   return state.recipes.find((recipe) => recipe.folderId === folderId) ?? null
+}
+
+/**
+ * Tags for an entry whose body is known to be current.
+ *
+ * Both revalidation paths skip reading the body when the validator still
+ * matches, which is what makes a quiet sync cheap — but it also means an entry
+ * cached before tags existed would never gain any. The body is already on this
+ * device, so filling them in costs a local read and no network at all. Bumping
+ * the manifest version instead would throw the whole cache away and re-download
+ * every recipe to learn what disk could have said for free.
+ *
+ * It reads straight from disk rather than through `getBody`, because this runs
+ * once over the whole cookbook and has no business evicting the bodies the cook
+ * is actually reading from the in-memory cache.
+ */
+function backfilledTags(prior: CachedRecipe, rootId: string, fileId: string): string[] {
+  if (prior.tags !== undefined) return prior.tags
+  const markdown = readBody(rootId, fileId)
+  return markdown === null ? [] : parseTags(markdown)
+}
+
+/**
+ * The order the cook put their photos in, without asking Drive or re-parsing.
+ *
+ * Once an entry has a media list, that list *is* the order — Drive's listing is
+ * unordered, so the sequence can only come from the markdown. A cache written
+ * before media existed has none, and reads it off the body already on disk, for
+ * exactly the reason `backfilledTags` does.
+ */
+function mediaOrder(prior: CachedRecipe | undefined, rootId: string, fileId: string): string[] {
+  if (prior?.media) return prior.media.map((entry) => entry.name)
+  const markdown = readBody(rootId, fileId)
+  return markdown === null ? [] : parseMedia(markdown)
+}
+
+/**
+ * Reconciles what the recipe says it has against what the folder actually holds.
+ *
+ * Both directions are forgiving on purpose. A file the markdown never mentions
+ * is still shown — that is what makes dropping a photo into the Drive folder
+ * from a laptop work. A name with no file behind it is skipped rather than
+ * rendered broken. The exception is a photo taken on this device and not yet
+ * uploaded: Drive has never heard of it and its only copy is local, so it is
+ * carried across untouched.
+ */
+function resolveMedia(files: DriveFileMeta[], order: string[], prior: RecipeMedia[] | undefined): RecipeMedia[] {
+  const known = new Map((prior ?? []).map((entry) => [entry.name, entry]))
+  const available = new Map<string, RecipeMedia>()
+  for (const meta of files) {
+    const name = meta.name ?? ''
+    if (!name || !isMediaMime(meta.mimeType ?? '', name)) continue
+    if (meta.thumbnailLink) thumbnailLinks.set(meta.id, meta.thumbnailLink)
+    available.set(name, {
+      name,
+      fileId: meta.id,
+      mimeType: meta.mimeType ?? '',
+      validator: fileValidator(meta),
+      size: Number(meta.size ?? 0),
+      // What is already downloaded stays downloaded. Dropping this would make
+      // every quiet sync look like every photo had gone stale.
+      cached: known.get(name)?.cached,
+    })
+  }
+  for (const entry of prior ?? []) {
+    if (entry.pending && !available.has(entry.name)) available.set(entry.name, entry)
+  }
+
+  const media: RecipeMedia[] = []
+  const placed = new Set<string>()
+  for (const name of order) {
+    const entry = available.get(name)
+    if (!entry || placed.has(name)) continue
+    placed.add(name)
+    media.push(entry)
+  }
+  // Timestamped names sort chronologically, so an unlisted file lands where it
+  // was taken rather than at a random spot.
+  const extra = [...available.keys()].filter((name) => !placed.has(name)).sort()
+  for (const name of extra) media.push(available.get(name)!)
+  return media
 }
 
 // --- lifecycle --------------------------------------------------------------
@@ -187,19 +297,21 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, run: (item: T
   return results
 }
 
+/** Groups one flat listing back into the folders it came from. */
 function indexByFolder(metas: DriveFileMeta[], folderIds: Set<string>) {
-  const byFolder = new Map<string, DriveFileMeta>()
+  const byFolder = new Map<string, DriveFileMeta[]>()
   for (const meta of metas) {
     const parent = meta.parents?.find((id) => folderIds.has(id))
     if (!parent) continue
     const existing = byFolder.get(parent)
-    // A folder should hold one recipe.md; if it holds more, prefer the newest
-    // so every device converges on the same choice.
-    if (!existing || (meta.modifiedTime ?? '') > (existing.modifiedTime ?? '')) {
-      byFolder.set(parent, meta)
-    }
+    if (existing) existing.push(meta)
+    else byFolder.set(parent, [meta])
   }
   return byFolder
+}
+
+function mediaNames(recipe: CachedRecipe): string[] {
+  return (recipe.media ?? []).map((entry) => entry.name)
 }
 
 const progressListeners = new Set<(progress: SyncProgress) => void>()
@@ -213,25 +325,36 @@ function emitProgress(progress: SyncProgress) {
 async function runSync(rootId: string) {
   const folders = await listRecipeFolders(rootId)
   const folderIds = new Set(folders.map((folder) => folder.id))
-  const metas = await listRecipeFiles(folders.map((folder) => folder.id))
-  const metaByFolder = indexByFolder(metas, folderIds)
+  const metas = await listFolderFiles(folders.map((folder) => folder.id))
+  const filesByFolder = indexByFolder(metas, folderIds)
 
   const previous = new Map(state.recipes.map((recipe) => [recipe.folderId, recipe]))
   const resolved = new Map<string, CachedRecipe>()
-  const stale: Array<{ folderId: string; slug: string; meta: DriveFileMeta; validator: string }> = []
+  const stale: Array<{
+    folderId: string
+    slug: string
+    meta: DriveFileMeta
+    validator: string
+    files: DriveFileMeta[]
+  }> = []
 
   for (const folder of folders) {
-    const meta = metaByFolder.get(folder.id)
+    const files = filesByFolder.get(folder.id) ?? []
+    const meta = pickRecipeFile(files)
     const prior = previous.get(folder.id)
 
     if (!meta) {
-      // A recipe folder with no recipe.md yet. Still listed, nothing to cache.
+      // A recipe folder with no recipe.md yet. Still listed, and its photos are
+      // still worth knowing about: this is how a folder someone filled with
+      // pictures first shows up.
       resolved.set(folder.id, {
         folderId: folder.id,
         fileId: null,
         slug: folder.name,
         title: slugToTitle(folder.name),
         time: '',
+        tags: [],
+        media: resolveMedia(files, [], prior?.media),
         validator: '',
       })
       continue
@@ -247,10 +370,17 @@ async function runSync(rootId: string) {
 
     if (unchanged) {
       // Folder renames still need to land, so rebuild rather than reuse verbatim.
-      resolved.set(folder.id, { ...prior, slug: folder.name })
+      // Media is rebuilt too even though the body did not change, because a
+      // photo added from another device adds a file without touching recipe.md.
+      resolved.set(folder.id, {
+        ...prior,
+        slug: folder.name,
+        tags: backfilledTags(prior, rootId, meta.id),
+        media: resolveMedia(files, mediaOrder(prior, rootId, meta.id), prior.media),
+      })
       continue
     }
-    stale.push({ folderId: folder.id, slug: folder.name, meta, validator })
+    stale.push({ folderId: folder.id, slug: folder.name, meta, validator, files })
   }
 
   emitProgress({ done: 0, total: stale.length })
@@ -266,6 +396,8 @@ async function runSync(rootId: string) {
         slug: item.slug,
         title: parseTitle(markdown, item.slug),
         time: parseTime(markdown),
+        tags: parseTags(markdown),
+        media: resolveMedia(item.files, parseMedia(markdown), previous.get(item.folderId)?.media),
         validator: item.validator,
       } satisfies CachedRecipe
     } catch (caught) {
@@ -278,6 +410,8 @@ async function runSync(rootId: string) {
         slug: item.slug,
         title: prior?.title ?? slugToTitle(item.slug),
         time: prior?.time ?? '',
+        tags: prior?.tags,
+        media: resolveMedia(item.files, prior?.media?.map((entry) => entry.name) ?? [], prior?.media),
         validator: '',
       } satisfies CachedRecipe
     } finally {
@@ -310,6 +444,15 @@ async function runSync(rootId: string) {
   pruneBodies(rootId, keep)
   for (const fileId of [...bodies.keys()]) {
     if (!keep.has(fileId)) bodies.delete(fileId)
+  }
+
+  // Photos are pruned by folder and name rather than by file id, because a
+  // photo still waiting to upload has no id yet and must survive.
+  pruneMedia(rootId, new Map(recipes.map((recipe) => [recipe.folderId, new Set(mediaNames(recipe))])))
+  const mediaIds = new Set(recipes.flatMap((recipe) => (recipe.media ?? []).map((entry) => entry.fileId)))
+  pruneThumbs(rootId, [...mediaIds].filter(Boolean))
+  for (const fileId of [...thumbnailLinks.keys()]) {
+    if (!mediaIds.has(fileId)) thumbnailLinks.delete(fileId)
   }
 
   const syncedAt = Date.now()
@@ -362,26 +505,26 @@ export function sync(options: { force?: boolean; onProgress?: (progress: SyncPro
 }
 
 /**
- * Revalidates a single recipe, for when one is opened. Costs one small metadata
+ * Revalidates a single recipe, for when one is opened. Costs one small listing
  * request unless the body actually changed.
+ *
+ * Listing the folder rather than fetching the cached file id by hand is both
+ * cheaper and more robust: it survives another device replacing `recipe.md`
+ * instead of editing it — which used to need a second request to notice — and it
+ * returns the folder's photos in the same breath.
  */
 export async function revalidateRecipe(folderId: string): Promise<void> {
   const rootId = state.rootId
   if (!rootId) return
   const current = state.recipes.find((recipe) => recipe.folderId === folderId)
-  // A cached file id goes stale when another device replaces recipe.md rather
-  // than editing it, so fall back to looking the file up by folder.
-  let meta = current?.fileId
-    ? await getFileMeta(current.fileId).catch((caught: unknown) => {
-        if (caught instanceof AuthError) throw caught
-        return null
-      })
-    : null
-  if (!meta) meta = await findRecipeFile(folderId)
-  // A delete that landed while these requests were in flight must not be undone.
+  const files = await listFolderFiles([folderId])
+  const meta = pickRecipeFile(files)
+  // A delete that landed while the request was in flight must not be undone.
   if (!state.recipes.some((recipe) => recipe.folderId === folderId)) return
   if (!meta) {
-    if (current?.fileId) upsert({ ...current, fileId: null, validator: '' })
+    if (current?.fileId) {
+      upsert({ ...current, fileId: null, validator: '', media: resolveMedia(files, [], current.media) })
+    }
     return
   }
 
@@ -392,7 +535,15 @@ export async function revalidateRecipe(folderId: string): Promise<void> {
     !!validator &&
     current.validator === validator &&
     hasBody(rootId, meta.id)
-  if (fresh) return
+  if (fresh) {
+    // Nothing to download, but the folder listing may still have brought news:
+    // a photo added elsewhere, or tags for an entry cached before they existed.
+    const media = resolveMedia(files, mediaOrder(current, rootId, meta.id), current.media)
+    if (current.tags === undefined || changedMedia(current.media, media)) {
+      upsert({ ...current, tags: backfilledTags(current, rootId, meta.id), media })
+    }
+    return
+  }
 
   const markdown = await readFile(meta.id)
   storeBody(rootId, meta.id, markdown)
@@ -404,7 +555,18 @@ export async function revalidateRecipe(folderId: string): Promise<void> {
     slug: current?.slug ?? folderId,
     title: parseTitle(markdown, current?.slug ?? folderId),
     time: parseTime(markdown),
+    tags: parseTags(markdown),
+    media: resolveMedia(files, parseMedia(markdown), current?.media),
     validator,
+  })
+}
+
+/** Cheap enough to run on every quiet revalidation, and it keeps one from re-rendering. */
+function changedMedia(before: RecipeMedia[] | undefined, after: RecipeMedia[]): boolean {
+  if (!before || before.length !== after.length) return true
+  return before.some((entry, index) => {
+    const next = after[index]
+    return !next || next.name !== entry.name || next.fileId !== entry.fileId || next.validator !== entry.validator
   })
 }
 
@@ -431,18 +593,53 @@ export async function saveRecipe(existing: RecipeSummary | null, text: string): 
   const rootId = state.rootId
   const title = parseTitle(text, existing?.slug ?? 'recette')
   const time = parseTime(text)
+  const tags = parseTags(text)
+  const media = mediaForSave(existing, text)
 
   if (!existing) {
     const slug = titleToSlug(title) || 'recette'
     const created = await createDriveRecipe(rootId, slug, text)
-    return commitSave({ folderId: created.folderId, slug, title, time }, created.file, text)
+    return commitSave({ folderId: created.folderId, slug, title, time, tags, media }, created.file, text)
   }
 
   const fileId = existing.fileId ?? (await findRecipeFile(existing.folderId))?.id ?? null
   const saved = fileId
     ? await updateFile(fileId, text)
     : await createRecipeFile(existing.folderId, text)
-  return commitSave({ folderId: existing.folderId, slug: existing.slug, title, time }, saved, text)
+  return commitSave({ folderId: existing.folderId, slug: existing.slug, title, time, tags, media }, saved, text)
+}
+
+/**
+ * The media list a save should keep, reordered to match what was just written.
+ *
+ * Only files this device already knows about are resolved here; anything else
+ * the markdown mentions is left for the next sync to find on Drive. A photo
+ * still waiting to upload is kept whether or not the text mentions it, because
+ * this device holds its only copy.
+ */
+function mediaForSave(existing: RecipeSummary | null, text: string): RecipeMedia[] {
+  // Read through the store rather than the caller's copy: a photo added moments
+  // ago is in the store but not yet in the snapshot a screen is holding, and
+  // saving from the stale copy would drop it back out of the manifest.
+  const current = existing ? (getRecipe(existing.folderId)?.media ?? existing.media) : undefined
+  const known = new Map((current ?? []).map((entry) => [entry.name, entry]))
+  const written = parseMedia(text)
+  const media = written.map((name) => known.get(name)).filter((entry): entry is RecipeMedia => !!entry)
+  const placed = new Set(media.map((entry) => entry.name))
+  for (const entry of known.values()) {
+    if (entry.pending && !placed.has(entry.name)) media.push(entry)
+  }
+  return media
+}
+
+/**
+ * Replaces a recipe's media list. The one way the media store writes back what
+ * it learned from uploading, downloading or deleting a file.
+ */
+export function setRecipeMedia(folderId: string, media: RecipeMedia[]): void {
+  const current = state.recipes.find((recipe) => recipe.folderId === folderId)
+  if (!current) return
+  upsert({ ...current, media })
 }
 
 /**
@@ -463,13 +660,19 @@ export async function deleteRecipe(folderId: string): Promise<void> {
     bodies.delete(recipe.fileId)
     if (rootId) deleteBody(rootId, recipe.fileId)
   }
+  // Videos are the largest thing this app caches; waiting for the next sync to
+  // reclaim the space would be careless.
+  if (rootId) {
+    clearMedia(rootId, folderId)
+    for (const entry of recipe?.media ?? []) thumbnailLinks.delete(entry.fileId)
+  }
   const syncedAt = state.syncedAt || Date.now()
   writeManifest(buildManifest(rootId, recipes, syncedAt))
   setState({ recipes, syncedAt })
 }
 
 function commitSave(
-  base: { folderId: string; slug: string; title: string; time: string },
+  base: { folderId: string; slug: string; title: string; time: string; tags: string[]; media: RecipeMedia[] },
   meta: DriveFileMeta,
   markdown: string,
 ) {
@@ -488,4 +691,14 @@ export function useRecipeStore(): StoreState {
 export function useRecipe(folderId: string): CachedRecipe | null {
   const snapshot = useSyncExternalStore(subscribe, getState)
   return snapshot.recipes.find((recipe) => recipe.folderId === folderId) ?? null
+}
+
+/**
+ * The cookbook's tag vocabulary. There is no registry of tags anywhere: a tag
+ * exists exactly as long as a recipe carries it, which is what makes creating
+ * one nothing more than typing it.
+ */
+export function useAllTags(): string[] {
+  const snapshot = useSyncExternalStore(subscribe, getState)
+  return useMemo(() => collectTags(snapshot.recipes.map((recipe) => recipe.tags)), [snapshot.recipes])
 }

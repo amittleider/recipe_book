@@ -33,9 +33,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-secure-store',
+    'expo-image',
+    'expo-video',
     [
       '@react-native-google-signin/google-signin',
       { iosUrlScheme: reversedClientId },
+    ],
+    // The permission strings iOS shows the cook. They live here rather than in
+    // ios/Info.plist, which prebuild regenerates from this file.
+    [
+      'expo-image-picker',
+      {
+        cameraPermission:
+          'Nos Recettes utilise l\u2019appareil photo pour ajouter des photos et vid\u00e9os \u00e0 vos recettes.',
+        photosPermission:
+          'Nos Recettes acc\u00e8de \u00e0 votre galerie pour ajouter des photos et vid\u00e9os \u00e0 vos recettes.',
+        microphonePermission:
+          'Nos Recettes utilise le micro pour enregistrer le son de vos vid\u00e9os.',
+      },
     ],
   ],
 })

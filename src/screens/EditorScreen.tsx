@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   Alert,
   KeyboardAvoidingView,
@@ -13,13 +13,26 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { AuthError } from '../api/drive'
-import { deleteRecipe, getBody, getRecipe, revalidateRecipe, saveRecipe, useRecipe } from '../data/recipeStore'
+import {
+  deleteRecipe,
+  getBody,
+  getRecipe,
+  revalidateRecipe,
+  saveRecipe,
+  useAllTags,
+  useRecipe,
+} from '../data/recipeStore'
+import { adoptDraft, discardDraft, getMedia, newDraftId } from '../data/mediaStore'
 import { Button, DeleteButton, ErrorBanner, Header, LoadingState, Screen } from '../components/ui'
+import { MediaEditor } from '../components/MediaEditor'
 import { SectionCard } from '../components/SectionCard'
+import { TagEditor } from '../components/TagEditor'
 import {
   addItem,
   addSection,
   blankDocument,
+  getTags,
+  isTagsKey,
   metaLabel,
   metaPlaceholder,
   parse,
@@ -27,9 +40,11 @@ import {
   removeSection,
   serialize,
   setItem,
+  setMedia,
   setMeta,
   setSection,
   setSectionKind,
+  setTags,
   splitItem,
   type RecipeDocument,
 } from '../lib/recipeDocument'
@@ -52,7 +67,7 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
   const cached = isNew ? null : getBody(recipe?.fileId ?? null)
 
   const [document, setDocument] = useState<RecipeDocument>(() =>
-    isNew ? (initialDocument ?? blankDocument()) : parse(cached ?? ''),
+    isNew ? (initialDocument ?? blankDocument()) : seed(folderId ?? '', cached),
   )
   const [loading, setLoading] = useState(!isNew && cached === null)
   const [saving, setSaving] = useState(false)
@@ -63,6 +78,19 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
   const inputs = useRef(new Map<string, TextInput | null>())
   // Once the cook types, nothing may replace what is on the form.
   const dirty = useRef(false)
+  const vocabulary = useAllTags()
+  const tags = useMemo(() => getTags(document), [document])
+  /**
+   * A new recipe has no Drive folder to put photos in yet, so it borrows a draft
+   * id: the bytes are staged locally under it, and the first save hands them to
+   * the folder Drive creates. Without this, photos would be the one thing the
+   * cook could not add until after saving.
+   */
+  const [draftId] = useState(newDraftId)
+  const mediaFolderId = folderId ?? draftId
+  // Photos upload as they are picked, so leaving without saving does not undo
+  // them. The cook is told rather than surprised.
+  const mediaTouched = useRef(false)
 
   useEffect(() => {
     if (!folderId) return
@@ -73,7 +101,7 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
       .then(() => {
         if (!mounted || dirty.current) return
         const fresh = getBody(getRecipe(folderId)?.fileId ?? null)
-        if (fresh !== null) setDocument(parse(fresh))
+        if (fresh !== null) setDocument(seed(folderId, fresh))
       })
       .catch((caught: unknown) => {
         if (caught instanceof AuthError) return onAuthError()
@@ -111,11 +139,19 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
     setFocus(result.focus)
   }
 
+  function changeMedia(names: string[]) {
+    mediaTouched.current = true
+    change(setMedia(document, names))
+  }
+
   async function save() {
     setSaving(true)
     setError('')
     try {
-      onSaved(await saveRecipe(recipe, serialize(document)))
+      const saved = await saveRecipe(recipe, serialize(document))
+      // The folder exists now, so anything staged against the draft can go.
+      if (isNew) adoptDraft(draftId, saved.folderId)
+      onSaved(saved)
     } catch (caught) {
       if (caught instanceof AuthError) return onAuthError()
       setError(caught instanceof Error ? caught.message : 'Enregistrement impossible')
@@ -137,6 +173,36 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
     } finally {
       setDeleting(false)
     }
+  }
+
+  /**
+   * Leaving without saving. A draft's photos have never left the device, so they
+   * go with it; an existing recipe's are already on Drive, and saying so is
+   * better than letting the cook believe cancelling took them back.
+   */
+  function cancel() {
+    const staged = getMedia(mediaFolderId)
+    if (!mediaTouched.current || !staged.length) {
+      if (isNew) discardDraft(draftId)
+      return onCancel()
+    }
+    Alert.alert(
+      'Abandonner les modifications ?',
+      isNew
+        ? 'Les photos ajoutées seront supprimées avec la recette.'
+        : 'Les photos ajoutées restent dans la recette ; seul le texte sera abandonné.',
+      [
+        { text: 'Continuer l’édition', style: 'cancel' },
+        {
+          text: 'Abandonner',
+          style: 'destructive',
+          onPress: () => {
+            if (isNew) discardDraft(draftId)
+            onCancel()
+          },
+        },
+      ],
+    )
   }
 
   // The folder is shared, so deleting takes the recipe away from everyone.
@@ -185,7 +251,7 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
             </Field>
 
             <View style={styles.meta}>
-              {document.meta.map((field) => (
+              {document.meta.filter((field) => !isTagsKey(field.key)).map((field) => (
                 <Field key={field.id} label={metaLabel(field.key)} style={styles.metaField}>
                   <TextInput
                     style={styles.metaInput}
@@ -197,6 +263,18 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
                 </Field>
               ))}
             </View>
+
+            <Field label="Tags">
+              <TagEditor
+                tags={tags}
+                vocabulary={vocabulary}
+                onChange={(next) => change(setTags(document, next))}
+              />
+            </Field>
+
+            <Field label="Photos">
+              <MediaEditor folderId={mediaFolderId} onChange={changeMedia} onAuthError={onAuthError} />
+            </Field>
 
             {document.sections.map((section) => (
               <SectionCard
@@ -224,13 +302,27 @@ export function EditorScreen({ folderId, initialDocument, onSaved, onCancel, onD
           </ScrollView>
 
           <View style={styles.actions}>
-            <Button style={styles.action} variant="secondary" onPress={onCancel} disabled={busy}>Annuler</Button>
+            <Button style={styles.action} variant="secondary" onPress={cancel} disabled={busy}>Annuler</Button>
             <Button style={styles.action} onPress={save} disabled={busy || !titled} busy={saving}>Enregistrer</Button>
           </View>
         </KeyboardAvoidingView>
       )}
     </Screen>
   )
+}
+
+/**
+ * Opens a recipe with the photo list the folder actually has.
+ *
+ * The markdown says what the last device to save believed; the store has since
+ * reconciled that against Drive. Seeding from the store means a photo added
+ * elsewhere is already in the order the cook is editing, so saving records the
+ * real sequence instead of quietly dropping it back out of the file.
+ */
+function seed(folderId: string, markdown: string | null): RecipeDocument {
+  const document = parse(markdown ?? '')
+  const media = getMedia(folderId).map((entry) => entry.name)
+  return media.length || document.media.length ? setMedia(document, media) : document
 }
 
 function Field({

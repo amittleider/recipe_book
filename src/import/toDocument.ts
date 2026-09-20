@@ -95,6 +95,9 @@ export function toDocument(recipe: ImportedRecipe, sourceUrl: string): RecipeDoc
     // untouched belongs here. The source link is; a site's SEO blurb is not,
     // because the cook would have no way to delete it.
     preamble: sourceUrl ? `Source : ${sourceUrl}` : '',
+    // An imported recipe carries no photos: the page's images belong to whoever
+    // published them, and nothing has been uploaded to this cookbook's folder.
+    media: [],
     sections,
   })
 }

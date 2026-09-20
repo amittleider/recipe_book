@@ -1,5 +1,7 @@
 import { Fragment, type ReactNode } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import { InlineMedia } from './InlineMedia'
+import { parseMediaRef } from '../lib/media'
 import { colors, fonts } from '../theme'
 
 /** Bold and italic runs inside a single line, shared with the recipe view. */
@@ -16,13 +18,19 @@ export function inlineText(value: string): ReactNode[] {
   })
 }
 
-export function RecipeMarkdown({ children }: { children: string }) {
+/**
+ * `folderId` is what lets an image reference find its file, so a block of text
+ * rendered without one falls back to showing the reference as the text it is.
+ */
+export function RecipeMarkdown({ children, folderId }: { children: string; folderId?: string }) {
   return (
     <View>
       {children.split(/\r?\n/).map((line, index) => {
         const trimmed = line.trim()
         if (!trimmed) return <View key={index} style={styles.space} />
         if (/^---+$/.test(trimmed)) return <View key={index} style={styles.rule} />
+        const media = folderId ? parseMediaRef(trimmed) : null
+        if (media) return <InlineMedia key={index} folderId={folderId!} name={media} />
         const heading = trimmed.match(/^(#{1,6})\s+(.*)$/)
         if (heading?.[1]) {
           const level = heading[1].length

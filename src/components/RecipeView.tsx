@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import { RecipeGallery } from './RecipeGallery'
 import { inlineText, RecipeMarkdown } from './RecipeMarkdown'
-import { metaLabel, parse } from '../lib/recipeDocument'
+import { TagChip } from './TagChip'
+import { getMedia, useMediaVersion } from '../data/mediaStore'
+import { getTags, isTagsKey, metaLabel, parse } from '../lib/recipeDocument'
 import { colors, fonts } from '../theme'
 
 /**
@@ -12,15 +15,31 @@ import { colors, fonts } from '../theme'
  * markdown renderer, because that is the one place a recipe may hold structure
  * the document model deliberately leaves alone.
  */
-export function RecipeView({ markdown }: { markdown: string }) {
+export function RecipeView({
+  markdown,
+  folderId,
+  onOpenMedia,
+}: {
+  markdown: string
+  folderId: string
+  onOpenMedia: (index: number) => void
+}) {
   const document = useMemo(() => parse(markdown), [markdown])
-  const meta = document.meta.filter((field) => field.value.trim())
+  // The gallery renders the store's list, not the document's: the store has
+  // reconciled it against the folder, so it shows a photo added from a laptop
+  // and skips a name whose file has gone.
+  useMediaVersion()
+  const media = getMedia(folderId)
+  // Tags are a list, so they get one chip each rather than one pill holding a
+  // comma-separated string.
+  const meta = document.meta.filter((field) => field.value.trim() && !isTagsKey(field.key))
+  const tags = getTags(document)
 
   return (
     <View style={styles.page}>
       {!!document.title && <Text style={styles.title}>{document.title}</Text>}
 
-      {meta.length > 0 && (
+      {(meta.length > 0 || tags.length > 0) && (
         <View style={styles.meta}>
           {meta.map((field) => (
             <View key={field.id} style={styles.pill}>
@@ -28,12 +47,17 @@ export function RecipeView({ markdown }: { markdown: string }) {
               <Text style={styles.pillValue}>{field.value}</Text>
             </View>
           ))}
+          {tags.map((tag) => (
+            <TagChip key={tag} label={tag} />
+          ))}
         </View>
       )}
 
+      <RecipeGallery folderId={folderId} media={media} onOpen={onOpenMedia} />
+
       {!!document.preamble.trim() && (
         <View style={styles.block}>
-          <RecipeMarkdown>{document.preamble}</RecipeMarkdown>
+          <RecipeMarkdown folderId={folderId}>{document.preamble}</RecipeMarkdown>
         </View>
       )}
 
@@ -41,7 +65,7 @@ export function RecipeView({ markdown }: { markdown: string }) {
         <View key={section.id} style={styles.block}>
           {!!section.name && <Text style={styles.heading}>{section.name}</Text>}
           {section.kind === 'text' ? (
-            <RecipeMarkdown>{section.body}</RecipeMarkdown>
+            <RecipeMarkdown folderId={folderId}>{section.body}</RecipeMarkdown>
           ) : (
             section.items
               .filter((item) => item.text.trim())

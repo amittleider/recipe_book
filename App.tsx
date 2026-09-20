@@ -11,6 +11,7 @@ import { ImportScreen } from './src/screens/ImportScreen'
 import { restoreAuthSession, signOut, type AuthUser } from './src/auth/googleAuth'
 import { AuthError } from './src/api/drive'
 import { hydrate, reset, sync } from './src/data/recipeStore'
+import { flushUploads, resetMedia } from './src/data/mediaStore'
 import { clearRootFolder, getRootFolder, setRootFolder } from './src/storage/keychain'
 import type { RecipeDocument } from './src/lib/recipeDocument'
 import type { DriveFolder } from './src/types'
@@ -31,6 +32,10 @@ export default function App() {
   // writes to Drive itself; it stops at a filled-in form the cook approves.
   const [importedDocument, setImportedDocument] = useState<RecipeDocument | null>(null)
   const [importedUrl, setImportedUrl] = useState('')
+  // The list screen unmounts whenever a recipe is opened, and a filter is a view
+  // the cook expects to still be there on the way back. The search box is not:
+  // it lives in the screen and is meant to be transient.
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const handleSessionExpired = useCallback(() => {
     setUser(null)
@@ -39,6 +44,8 @@ export default function App() {
 
   /** Loading the cache is synchronous, so a warm launch lands straight on the list. */
   const openFolder = useCallback((folder: DriveFolder) => {
+    // Tags belong to a folder's recipes, so a different cookbook starts unfiltered.
+    setSelectedTags([])
     setScreen(hydrate(folder.id) ? 'list' : 'sync')
   }, [])
 
@@ -66,6 +73,9 @@ export default function App() {
   useEffect(() => {
     if (!revalidating) return
     const revalidate = () => {
+      // A photo taken with no signal is waiting on exactly this moment, so the
+      // queue is drained wherever the app already checks back in with Drive.
+      flushUploads()
       sync().catch((caught: unknown) => {
         if (caught instanceof AuthError) handleSessionExpired()
       })
@@ -85,9 +95,11 @@ export default function App() {
 
   async function handleSignOut() {
     reset()
+    resetMedia()
     await Promise.all([signOut(), clearRootFolder()])
     setUser(null)
     setRootFolderState(null)
+    setSelectedTags([])
     setScreen('auth')
   }
 
@@ -118,6 +130,8 @@ export default function App() {
       {screen === 'list' && rootFolder && (
         <RecipeListScreen
           user={user}
+          selectedTags={selectedTags}
+          onSelectedTags={setSelectedTags}
           onOpen={(recipe) => {
             setCurrentFolderId(recipe.folderId)
             setScreen('detail')

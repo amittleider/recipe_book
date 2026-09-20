@@ -13,6 +13,9 @@
  * flattened by an edit made on a phone.
  */
 
+import { formatMediaRef, isMediaSection, MEDIA_SECTION, parseMediaRef } from './media'
+import { formatTagList, parseTagList } from './tags'
+
 export type SectionKind = 'bullet' | 'ordered' | 'text'
 
 export type Item = { id: string; text: string }
@@ -33,6 +36,8 @@ export type RecipeDocument = {
   meta: MetaField[]
   /** Anything between the meta line and the first section, kept as written. */
   preamble: string
+  /** Photo and video file names, in order. The first one is the cover. */
+  media: string[]
   sections: Section[]
 }
 
@@ -44,7 +49,17 @@ export type RecipeDocument = {
 export const KNOWN_META: Array<{ key: string; label: string; placeholder: string }> = [
   { key: 'Serves', label: 'Portions', placeholder: '4' },
   { key: 'Time', label: 'Temps', placeholder: '45 min' },
+  { key: 'Tags', label: 'Tags', placeholder: 'Dessert, Indien' },
 ]
+
+/**
+ * Tags are meta on the page but not on the form: they are a list, and a list
+ * gets chips rather than the text input every other meta field gets. Screens
+ * use this to take them out of the generic meta loop.
+ */
+export function isTagsKey(key: string): boolean {
+  return normalise(key) === 'tags'
+}
 
 /** Empty sections take their shape from their name, so a fresh recipe round-trips. */
 const SECTION_DEFAULTS: Array<{ names: string[]; kind: SectionKind }> = [
@@ -132,6 +147,23 @@ function buildSection(name: string, raw: string[]): Section {
   return { id: id(), name, kind: 'text', items: [], body: lines.join('\n') }
 }
 
+/**
+ * The file names a `## Photos` section lists, or null if it is not one.
+ *
+ * A section only becomes the photo list when *every* line in it is an image
+ * reference and nothing else. Anything more — a stray note between two photos, a
+ * link — and it stays an ordinary section, written back exactly as it was found.
+ * That is the same rule the rest of this module follows: impose structure only
+ * where it is unambiguous.
+ */
+function mediaSection(section: Section): string[] | null {
+  if (!isMediaSection(section.name)) return null
+  if (section.kind !== 'text') return null
+  const lines = section.body.split('\n').map((line) => line.trim()).filter(Boolean)
+  const names = lines.map(parseMediaRef)
+  return names.every((name): name is string => !!name) ? names : null
+}
+
 export function parse(markdown: string): RecipeDocument {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
   let title = ''
@@ -177,7 +209,16 @@ export function parse(markdown: string): RecipeDocument {
   // Rules are dropped only from the preamble, where the old template used them
   // as decoration. Inside a section they are content and stay put.
   const preamble = trimBlank(head.filter((line) => !RULE.test(line.trim()))).join('\n')
-  return withKnownMeta({ title, meta, preamble, sections })
+
+  const media: string[] = []
+  const rest = sections.filter((section) => {
+    const names = mediaSection(section)
+    if (!names) return true
+    media.push(...names)
+    return false
+  })
+
+  return withKnownMeta({ title, meta, preamble, media, sections: rest })
 }
 
 /** Guarantees a field for every known key so the form always offers them. */
@@ -197,6 +238,7 @@ export function blankDocument(): RecipeDocument {
     title: '',
     meta: [],
     preamble: '',
+    media: [],
     sections: [newSection('Ingrédients', 'bullet'), newSection('Méthode', 'ordered')],
   })
 }
@@ -223,6 +265,15 @@ export function serialize(document: RecipeDocument): string {
 
   const preamble = document.preamble.trim()
   if (preamble) blocks.push(preamble)
+
+  // Written where the gallery renders, above the recipe itself. A recipe with no
+  // photos gets no section at all, so it is stored exactly as it was before
+  // media existed.
+  const media = document.media.map((name) => name.trim()).filter(Boolean)
+  if (media.length) {
+    blocks.push(`## ${MEDIA_SECTION}`)
+    blocks.push(media.map(formatMediaRef).join('\n'))
+  }
 
   for (const section of document.sections) {
     const name = section.name.trim()
@@ -344,6 +395,29 @@ export function setMeta(document: RecipeDocument, fieldId: string, value: string
   return {
     ...document,
     meta: document.meta.map((field) => (field.id === fieldId ? { ...field, value } : field)),
+  }
+}
+
+export function setMedia(document: RecipeDocument, media: string[]): RecipeDocument {
+  return { ...document, media }
+}
+
+export function getTags(document: RecipeDocument): string[] {
+  return parseTagList(document.meta.find((field) => isTagsKey(field.key))?.value ?? '')
+}
+
+/**
+ * An empty list leaves an empty value, which `serialize` drops — so an untagged
+ * recipe is written exactly as it was before tags existed.
+ */
+export function setTags(document: RecipeDocument, tags: string[]): RecipeDocument {
+  const value = formatTagList(tags)
+  if (!document.meta.some((field) => isTagsKey(field.key))) {
+    return withKnownMeta({ ...document, meta: [...document.meta, { id: id(), key: 'Tags', value }] })
+  }
+  return {
+    ...document,
+    meta: document.meta.map((field) => (isTagsKey(field.key) ? { ...field, value } : field)),
   }
 }
 

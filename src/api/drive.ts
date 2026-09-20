@@ -1,3 +1,4 @@
+import { File, UploadType } from 'expo-file-system'
 import { AuthError, getAccessToken } from '../auth/googleAuth'
 import type { DriveFolder } from '../types'
 
@@ -9,7 +10,12 @@ const RECIPE_FILE = 'recipe.md'
 // Drive v3 dropped resource ETags, but a files.list response carries everything
 // needed to decide whether a cached body is still current. Asking for these
 // fields lets one query revalidate the whole cookbook.
-const FILE_FIELDS = 'id,name,parents,modifiedTime,md5Checksum,size,version'
+const FILE_FIELDS = 'id,name,parents,modifiedTime,md5Checksum,size,version,mimeType'
+
+// `thumbnailLink` is only worth asking for when listing, and only ever used
+// immediately: Drive's thumbnail links expire after a few hours, so they are
+// never written to the manifest.
+const LIST_FIELDS = `${FILE_FIELDS},thumbnailLink`
 
 // Number of parent folders folded into a single `... in parents or ...` query.
 // Drive rejects very long queries, and 40 keeps a typical cookbook at one request.
@@ -28,6 +34,9 @@ export type DriveFileMeta = {
   md5Checksum?: string
   size?: string
   version?: string
+  mimeType?: string
+  /** Short-lived link to a Drive-generated thumbnail. Never persist it. */
+  thumbnailLink?: string
 }
 
 /** A failed Drive call, carrying the status so callers can tolerate specific ones. */
@@ -136,20 +145,36 @@ export function listRecipeFolders(rootId: string): Promise<DriveFolder[]> {
 }
 
 /**
- * Finds every `recipe.md` under the given recipe folders in a handful of
- * requests rather than one per folder, and returns the metadata needed to tell
- * whether each cached body is stale.
+ * Every file held by the given recipe folders, in a handful of requests rather
+ * than one per folder, with the metadata needed to tell whether each cached
+ * copy is stale.
+ *
+ * The query deliberately does not filter by name. A recipe folder holds its
+ * `recipe.md` *and* its photos, and asking for both in the same response makes
+ * media cost no extra round trip at all — the caller sorts them out by name and
+ * mime type. Filtering per folder, or issuing a second query for media, would
+ * reintroduce exactly the per-folder cost this batching exists to avoid.
  */
-export async function listRecipeFiles(folderIds: string[]): Promise<DriveFileMeta[]> {
+export async function listFolderFiles(folderIds: string[]): Promise<DriveFileMeta[]> {
   if (!folderIds.length) return []
   const batches = await Promise.all(
     chunk(folderIds, PARENT_BATCH).map((ids) => {
       const parents = ids.map((id) => `'${escapeDriveQuery(id)}' in parents`).join(' or ')
-      const q = `(${parents}) and name='${RECIPE_FILE}' and trashed=false`
-      return listAllPages<DriveFileMeta>({ q }, `files(${FILE_FIELDS})`)
+      const q = `(${parents}) and mimeType!='${FOLDER_MIME}' and trashed=false`
+      return listAllPages<DriveFileMeta>({ q }, `files(${LIST_FIELDS})`)
     }),
   )
   return batches.flat()
+}
+
+/** The one `recipe.md` a folder should hold, newest first if it somehow holds several. */
+export function pickRecipeFile(files: DriveFileMeta[]): DriveFileMeta | null {
+  let best: DriveFileMeta | null = null
+  for (const file of files) {
+    if (file.name !== RECIPE_FILE) continue
+    if (!best || (file.modifiedTime ?? '') > (best.modifiedTime ?? '')) best = file
+  }
+  return best
 }
 
 export async function findRecipeFile(folderId: string): Promise<DriveFileMeta | null> {
@@ -163,12 +188,6 @@ export async function findRecipeFile(folderId: string): Promise<DriveFileMeta | 
   const response = await request(`${API}/files?${params}`)
   const data = (await response.json()) as { files?: DriveFileMeta[] }
   return data.files?.[0] ?? null
-}
-
-export async function getFileMeta(fileId: string): Promise<DriveFileMeta> {
-  const params = new URLSearchParams({ fields: FILE_FIELDS, ...sharedDriveParams })
-  const response = await request(`${API}/files/${encodeURIComponent(fileId)}?${params}`)
-  return response.json() as Promise<DriveFileMeta>
 }
 
 export async function readFile(fileId: string) {
@@ -215,18 +234,103 @@ export async function updateFile(fileId: string, content: string): Promise<Drive
   return response.json() as Promise<DriveFileMeta>
 }
 
+// --- media ------------------------------------------------------------------
+
 /**
- * Deletes a recipe by moving its whole folder to Drive's trash.
+ * Bearer headers for the streaming transfer APIs.
  *
- * Trashing rather than permanently deleting matters for a shared cookbook: the
- * folder is recoverable from Drive for anyone who deletes the wrong recipe, and
- * every query in this module already filters on `trashed=false`, so the recipe
- * disappears from each device on its next revalidation regardless.
+ * Photos and videos never pass through `request()`: a multi-megabyte body has no
+ * business being held in JavaScript, so uploads and downloads are handed to
+ * expo-file-system, which streams them natively. Those calls cannot reuse the
+ * fetch wrapper, so they need the token on their own.
  */
-export async function trashRecipe(folderId: string): Promise<void> {
+export async function authHeaders(): Promise<Record<string, string>> {
+  return { Authorization: `Bearer ${await getAccessToken()}` }
+}
+
+/** The URL that serves a file's bytes, for a streaming download. */
+export function mediaUrl(fileId: string): string {
+  const params = new URLSearchParams({ alt: 'media', supportsAllDrives: 'true' })
+  return `${API}/files/${encodeURIComponent(fileId)}?${params}`
+}
+
+/**
+ * A fresh thumbnail link for one file. Drive's links last on the order of hours,
+ * so a cached tile that outlives its link re-asks for just this one field.
+ */
+export async function refreshThumbnailLink(fileId: string): Promise<string> {
+  const params = new URLSearchParams({ fields: 'thumbnailLink', ...sharedDriveParams })
+  const response = await request(`${API}/files/${encodeURIComponent(fileId)}?${params}`)
+  return ((await response.json()) as { thumbnailLink?: string }).thumbnailLink ?? ''
+}
+
+/**
+ * Uploads one photo or video into a recipe folder.
+ *
+ * This uses Drive's resumable protocol rather than the multipart upload the
+ * markdown files use, for one reason: the bytes stay on disk. The session is
+ * opened here, and expo-file-system streams the file into it natively, so a
+ * 200 MB video costs no JavaScript memory and can report progress. The session
+ * URI carries its own authorisation, which also means a long upload survives the
+ * access token that started it expiring underneath it.
+ */
+export async function uploadMedia(
+  folderId: string,
+  file: File,
+  name: string,
+  mimeType: string,
+  options: { onProgress?: (sent: number, total: number) => void; signal?: AbortSignal } = {},
+): Promise<DriveFileMeta> {
+  const params = new URLSearchParams({
+    uploadType: 'resumable',
+    fields: FILE_FIELDS,
+    supportsAllDrives: 'true',
+  })
+  const opened = await request(`${UPLOAD}/files?${params}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'X-Upload-Content-Type': mimeType,
+      'X-Upload-Content-Length': String(file.size),
+    },
+    body: JSON.stringify({ name, parents: [folderId], mimeType }),
+  })
+  const session = opened.headers.get('location')
+  if (!session) throw new DriveError(opened.status, 'Session de téléversement absente')
+
+  const { onProgress, signal } = options
+  // `upload` resolves for any completed response, including failures, so the
+  // status has to be checked by hand to get the same errors as `request()`.
+  const result = await file.upload(session, {
+    httpMethod: 'PUT',
+    uploadType: UploadType.BINARY_CONTENT,
+    mimeType,
+    headers: { 'Content-Type': mimeType },
+    onProgress: onProgress ? ({ bytesSent, totalBytes }) => onProgress(bytesSent, totalBytes) : undefined,
+    signal,
+  })
+  if (result.status === 401) throw new AuthError('Google session expired')
+  if (result.status < 200 || result.status >= 300) {
+    throw new DriveError(result.status, result.body.slice(0, 300))
+  }
+
+  const meta = JSON.parse(result.body) as DriveFileMeta
+  if (!meta?.id) throw new DriveError(result.status, 'Réponse de téléversement inattendue')
+  return meta
+}
+
+/**
+ * Moves one file to Drive's trash.
+ *
+ * Trashing rather than permanently deleting matters for a shared cookbook: it is
+ * recoverable from Drive for anyone who deletes the wrong thing, and every query
+ * in this module already filters on `trashed=false`, so it disappears from each
+ * device on its next revalidation regardless.
+ */
+export async function trashFile(fileId: string): Promise<void> {
   const params = new URLSearchParams({ fields: 'id', supportsAllDrives: 'true' })
   try {
-    await request(`${API}/files/${encodeURIComponent(folderId)}?${params}`, {
+    await request(`${API}/files/${encodeURIComponent(fileId)}?${params}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ trashed: true }),
@@ -236,6 +340,14 @@ export async function trashRecipe(folderId: string): Promise<void> {
     if (caught instanceof DriveError && caught.status === 404) return
     throw caught
   }
+}
+
+/**
+ * Deletes a recipe by moving its whole folder to Drive's trash, media included:
+ * the photos live inside the folder, so they travel with it.
+ */
+export function trashRecipe(folderId: string): Promise<void> {
+  return trashFile(folderId)
 }
 
 export async function createRecipe(rootId: string, slug: string, content: string) {
