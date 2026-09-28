@@ -1,0 +1,182 @@
+{
+  "height" : 3200,
+  "lines" : [
+    {
+      "confidence" : 1,
+      "height" : 0.023300000000000001,
+      "text" : "Lemon Drizzle Loaf",
+      "width" : 0.3679,
+      "x" : 0.1099,
+      "y" : 0.075600000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "Serves 8 • Prep: 20 minutes • Bake: 45 minutes",
+      "width" : 0.4461,
+      "x" : 0.1099,
+      "y" : 0.1265
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0184,
+      "text" : "Ingredients",
+      "width" : 0.1356,
+      "x" : 0.1056,
+      "y" : 0.17829999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0147,
+      "text" : "• 225 g unsalted butter, softened",
+      "width" : 0.2833,
+      "x" : 0.11840000000000001,
+      "y" : 0.215
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "• 225 g caster sugar",
+      "width" : 0.17760000000000001,
+      "x" : 0.11840000000000001,
+      "y" : 0.2397
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0134,
+      "text" : "• 4 large eggs",
+      "width" : 0.1206,
+      "x" : 0.11840000000000001,
+      "y" : 0.26290000000000002
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "• 225 g self-raising flour",
+      "width" : 0.2114,
+      "x" : 0.11840000000000001,
+      "y" : 0.2863
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "• 1 tsp baking powder",
+      "width" : 0.18820000000000001,
+      "x" : 0.11840000000000001,
+      "y" : 0.31090000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.011599999999999999,
+      "text" : "• zest of 2 unwaxed lemons",
+      "width" : 0.2389,
+      "x" : 0.11840000000000001,
+      "y" : 0.33429999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "• 3 tbsp whole milk",
+      "width" : 0.1691,
+      "x" : 0.1163,
+      "y" : 0.35899999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "• 85 g granulated sugar, for the drizzle",
+      "width" : 0.33189999999999997,
+      "x" : 0.1163,
+      "y" : 0.38219999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0177,
+      "text" : "• juice of 2 lemons",
+      "width" : 0.1615,
+      "x" : 0.1179,
+      "y" : 0.40279999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0147,
+      "text" : "Method",
+      "width" : 0.090999999999999998,
+      "x" : 0.10780000000000001,
+      "y" : 0.44180000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "Heat the oven to 180 °C and line a 900 g loaf tin with baking paper.",
+      "width" : 0.55600000000000005,
+      "x" : 0.1163,
+      "y" : 0.47670000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "Beat the butter and caster sugar until pale and fluffy, then add the eggs one at a time, beating",
+      "width" : 0.77170000000000005,
+      "x" : 0.1163,
+      "y" : 0.5
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0103,
+      "text" : "well between each.",
+      "width" : 0.15640000000000001,
+      "x" : 0.11840000000000001,
+      "y" : 0.52470000000000006
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "Fold in the flour, baking powder and lemon zest, then loosen with the milk until the batter drops",
+      "width" : 0.78439999999999999,
+      "x" : 0.1163,
+      "y" : 0.54649999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.013100000000000001,
+      "text" : "easily from the spoon.",
+      "width" : 0.18390000000000001,
+      "x" : 0.11840000000000001,
+      "y" : 0.56830000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0147,
+      "text" : "Spoon into the tin and bake for 45 minutes, until a skewer comes out clean.",
+      "width" : 0.62160000000000004,
+      "x" : 0.1163,
+      "y" : 0.59160000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0147,
+      "text" : "While the loaf cools in its tin, stir the granulated sugar into the lemon juice and spoon it over the",
+      "width" : 0.78859999999999997,
+      "x" : 0.1163,
+      "y" : 0.61470000000000002
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.011599999999999999,
+      "text" : "warm cake so it soaks in.",
+      "width" : 0.2072,
+      "x" : 0.11840000000000001,
+      "y" : 0.6381
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0086999999999999994,
+      "text" : "112",
+      "width" : 0.025399999999999999,
+      "x" : 0.10780000000000001,
+      "y" : 0.94040000000000001
+    }
+  ],
+  "width" : 2200
+}

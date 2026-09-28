@@ -1,0 +1,414 @@
+{
+  "height" : 3800,
+  "lines" : [
+    {
+      "confidence" : 1,
+      "height" : 0.024199999999999999,
+      "text" : "SALADE",
+      "width" : 0.15210000000000001,
+      "x" : 0.21290000000000001,
+      "y" : 0.1086
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.024799999999999999,
+      "text" : "DE HARICOTS",
+      "width" : 0.25440000000000002,
+      "x" : 0.21299999999999999,
+      "y" : 0.1482
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0263,
+      "text" : "SALA ET D'AVOCAT",
+      "width" : 0.27610000000000001,
+      "x" : 0.18149999999999999,
+      "y" : 0.1845
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "Salade : émincer les avocats. Les mettre dans un grand saladier",
+      "width" : 0.42009999999999997,
+      "x" : 0.2051,
+      "y" : 0.2253
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0147,
+      "text" : "avec les haricots noirs et les haricots blancs, l'oignon rouge, la",
+      "width" : 0.41220000000000001,
+      "x" : 0.20319999999999999,
+      "y" : 0.2455
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0086999999999999994,
+      "text" : "coriandre et les tomates cerises.",
+      "width" : 0.21299999999999999,
+      "x" : 0.20710000000000001,
+      "y" : 0.26600000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.013100000000000001,
+      "text" : "• Écaler les œufs et les couper en quatre.",
+      "width" : 0.2702,
+      "x" : 0.20710000000000001,
+      "y" : 0.28199999999999997
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "Sauce : dans un petit saladier, mélanger l'huile avec le jus de",
+      "width" : 0.40039999999999998,
+      "x" : 0.2051,
+      "y" : 0.2994
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0146,
+      "text" : "citron vert, l'ail, une pincée de sel, du poivre, le sucre, le piment",
+      "width" : 0.41810000000000003,
+      "x" : 0.2051,
+      "y" : 0.31969999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "et le cumin. • Verser la sauce sur la salade et remuer",
+      "width" : 0.34710000000000002,
+      "x" : 0.2051,
+      "y" : 0.34000000000000002
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017399999999999999,
+      "text" : "64 délicatement. Ajouter les œufs, et servir avec du pain pita.",
+      "width" : 0.4083,
+      "x" : 0.17949999999999999,
+      "y" : 0.35759999999999997
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "Pour 4-6 personnes",
+      "width" : 0.15190000000000001,
+      "x" : 0.68240000000000001,
+      "y" : 0.0625
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "Préparation: 10 minutes",
+      "width" : 0.18340000000000001,
+      "x" : 0.68240000000000001,
+      "y" : 0.081299999999999997
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "Niveau de difficulté : 1",
+      "width" : 0.16569999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.098799999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017899999999999999,
+      "text" : "Salade",
+      "width" : 0.063299999999999995,
+      "x" : 0.68230000000000002,
+      "y" : 0.12770000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017500000000000002,
+      "text" : "• 2 avocats, pelés",
+      "width" : 0.1381,
+      "x" : 0.68240000000000001,
+      "y" : 0.157
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016299999999999999,
+      "text" : "et dénoyautés",
+      "width" : 0.1125,
+      "x" : 0.69420000000000004,
+      "y" : 0.1757
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017500000000000002,
+      "text" : "• 400 g de haricots noirs",
+      "width" : 0.1893,
+      "x" : 0.68240000000000001,
+      "y" : 0.19470000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.019,
+      "text" : "en boîte, égouttés",
+      "width" : 0.14000000000000001,
+      "x" : 0.69430000000000003,
+      "y" : 0.2137
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.0147,
+      "text" : "et rincés",
+      "width" : 0.069099999999999995,
+      "x" : 0.69420000000000004,
+      "y" : 0.2354
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017500000000000002,
+      "text" : "• 400 g de haricots blancs",
+      "width" : 0.20119999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.25290000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017600000000000001,
+      "text" : "en boîte, égouttés",
+      "width" : 0.14000000000000001,
+      "x" : 0.69430000000000003,
+      "y" : 0.2732
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.0132,
+      "text" : "et rincés",
+      "width" : 0.069099999999999995,
+      "x" : 0.69620000000000004,
+      "y" : 0.29499999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.019,
+      "text" : "• 1 petit oignon rouge,",
+      "width" : 0.1696,
+      "x" : 0.68240000000000001,
+      "y" : 0.311
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.017399999999999999,
+      "text" : "finement émincé",
+      "width" : 0.13020000000000001,
+      "x" : 0.69430000000000003,
+      "y" : 0.32990000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0189,
+      "text" : "• 50 g de coriandre,",
+      "width" : 0.15379999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.3503
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017600000000000001,
+      "text" : "grossièrement hachée",
+      "width" : 0.1716,
+      "x" : 0.69430000000000003,
+      "y" : 0.3705
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017600000000000001,
+      "text" : "• 400 g de tomates",
+      "width" : 0.14990000000000001,
+      "x" : 0.68240000000000001,
+      "y" : 0.38950000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "cerises, coupées en deux",
+      "width" : 0.1933,
+      "x" : 0.69230000000000003,
+      "y" : 0.40989999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.018200000000000001,
+      "text" : "• 4 œufs durs",
+      "width" : 0.1087,
+      "x" : 0.68230000000000002,
+      "y" : 0.4284
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.019300000000000001,
+      "text" : "• pain pita grillé,",
+      "width" : 0.1283,
+      "x" : 0.68240000000000001,
+      "y" : 0.44750000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017600000000000001,
+      "text" : "pour accompagner",
+      "width" : 0.1479,
+      "x" : 0.69430000000000003,
+      "y" : 0.46789999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016400000000000001,
+      "text" : "Sauce",
+      "width" : 0.0574,
+      "x" : 0.68230000000000002,
+      "y" : 0.54190000000000005
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "• 6 cuil. à soupe d'huile",
+      "width" : 0.17749999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.56969999999999998
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.016400000000000001,
+      "text" : "d'oliver",
+      "width" : 0.053499999999999999,
+      "x" : 0.69610000000000005,
+      "y" : 0.58840000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017399999999999999,
+      "text" : "• 1 cuil. à soupe de",
+      "width" : 0.14399999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.60760000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "jus de citron vert",
+      "width" : 0.1321,
+      "x" : 0.69430000000000003,
+      "y" : 0.62790000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017399999999999999,
+      "text" : "fraîchement pressé",
+      "width" : 0.14990000000000001,
+      "x" : 0.69430000000000003,
+      "y" : 0.64680000000000004
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "• 1 gousse d'ail, finement",
+      "width" : 0.1893,
+      "x" : 0.68240000000000001,
+      "y" : 0.66859999999999997
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.0147,
+      "text" : "hachée",
+      "width" : 0.057299999999999997,
+      "x" : 0.69620000000000004,
+      "y" : 0.68740000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "• 1 pincée de sucre",
+      "width" : 0.14399999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.70779999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0146,
+      "text" : "• 1 petit piment rouge,",
+      "width" : 0.16769999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.72670000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "épépiné et finement",
+      "width" : 0.15190000000000001,
+      "x" : 0.69430000000000003,
+      "y" : 0.74709999999999999
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.013100000000000001,
+      "text" : "haché",
+      "width" : 0.049299999999999997,
+      "x" : 0.69630000000000003,
+      "y" : 0.76600000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0146,
+      "text" : "• ½ cuil. à café de cumin",
+      "width" : 0.18149999999999999,
+      "x" : 0.68240000000000001,
+      "y" : 0.78490000000000004
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "en poudre",
+      "width" : 0.078899999999999998,
+      "x" : 0.69630000000000003,
+      "y" : 0.80520000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0146,
+      "text" : "• sel et poivre noir",
+      "width" : 0.1381,
+      "x" : 0.68240000000000001,
+      "y" : 0.82410000000000005
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "du moulin",
+      "width" : 0.074999999999999997,
+      "x" : 0.69630000000000003,
+      "y" : 0.84450000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.010200000000000001,
+      "text" : "L'avocat est riche en nutriments essentiels : fibres, potassium, vitamine E,",
+      "width" : 0.40039999999999998,
+      "x" : 0.2051,
+      "y" : 0.86339999999999995
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.011599999999999999,
+      "text" : "vitamines B, acide folique. Consommé régulièrement, il favorise la baisse du",
+      "width" : 0.41220000000000001,
+      "x" : 0.20710000000000001,
+      "y" : 0.87790000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0086999999999999994,
+      "text" : "cholestérol et prévient les maladies cardio-vasculaires.",
+      "width" : 0.29780000000000001,
+      "x" : 0.20710000000000001,
+      "y" : 0.89390000000000003
+    }
+  ],
+  "width" : 2800
+}

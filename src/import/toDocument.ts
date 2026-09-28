@@ -1,6 +1,7 @@
 import {
   newItem,
   newSection,
+  normalise,
   withKnownMeta,
   type RecipeDocument,
   type Section,
@@ -71,8 +72,22 @@ function listSection(name: string, kind: 'bullet' | 'ordered', texts: string[]):
   return { ...newSection(name, kind), items: texts.map((text) => newItem(text)) }
 }
 
+/**
+ * One bullet section per named ingredient group, or the single `Ingrédients`
+ * section when the source did not group them. A lone unnamed group is the same
+ * thing as no grouping, so it keeps the ordinary heading and a photographed
+ * recipe reads exactly like one typed here.
+ */
+function ingredientSections(recipe: ImportedRecipe): Section[] {
+  const groups = (recipe.ingredientGroups ?? []).filter((group) => group.steps.length)
+  if (!groups.length || (groups.length === 1 && !groups[0]?.name.trim())) {
+    return [listSection('Ingrédients', 'bullet', recipe.ingredients)]
+  }
+  return groups.map((group) => listSection(group.name || 'Ingrédients', 'bullet', group.steps))
+}
+
 export function toDocument(recipe: ImportedRecipe, sourceUrl: string): RecipeDocument {
-  const sections: Section[] = [listSection('Ingrédients', 'bullet', recipe.ingredients)]
+  const sections: Section[] = ingredientSections(recipe)
 
   const groups = recipe.groups.filter((group) => group.steps.length)
   if (groups.length === 1 && groups[0]) {
@@ -80,9 +95,23 @@ export function toDocument(recipe: ImportedRecipe, sourceUrl: string): RecipeDoc
     // so an imported recipe reads exactly like one written here.
     sections.push(listSection('Méthode', 'ordered', groups[0].steps))
   } else {
+    // A cookbook names the method's parts after the same things as the
+    // ingredient lists — `Sauce` appears in both columns — which would leave the
+    // recipe with two `## Sauce` sections and no way to tell them apart. The
+    // clash is qualified only where it actually happens, so a method group with
+    // a name of its own keeps it.
+    const taken = new Set(sections.map((section) => normalise(section.name)))
     for (const group of groups) {
-      sections.push(listSection(group.name || 'Méthode', 'ordered', group.steps))
+      const name = group.name || 'Méthode'
+      sections.push(listSection(taken.has(normalise(name)) ? `Méthode — ${name}` : name, 'ordered', group.steps))
     }
+  }
+
+  // Kept last and kept verbatim: whatever the importer could not place is the
+  // cook's to judge, and it is one swipe to delete a section they do not want.
+  const notes = (recipe.notes ?? []).map((note) => note.trim()).filter(Boolean)
+  if (notes.length) {
+    sections.push({ ...newSection('Notes', 'text'), body: notes.join('\n\n') })
   }
 
   return withKnownMeta({

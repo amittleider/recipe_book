@@ -1,0 +1,214 @@
+{
+  "height" : 3800,
+  "lines" : [
+    {
+      "confidence" : 1,
+      "height" : 0.032399999999999998,
+      "text" : "SALADE",
+      "width" : 0.1552,
+      "x" : 0.24679999999999999,
+      "y" : 0.094899999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.048800000000000003,
+      "text" : "DE HARICOTS",
+      "width" : 0.26540000000000002,
+      "x" : 0.23999999999999999,
+      "y" : 0.1303
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.048300000000000003,
+      "text" : "ET D'AVOCAT",
+      "width" : 0.2545,
+      "x" : 0.23419999999999999,
+      "y" : 0.16950000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.037199999999999997,
+      "text" : "Salade : émincer les avocats. Les mettre dans un grand saladier",
+      "width" : 0.41649999999999998,
+      "x" : 0.22969999999999999,
+      "y" : 0.21079999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.032899999999999999,
+      "text" : "avec les haricots noirs et les haricots blancs, l'oignon rouge, la",
+      "width" : 0.40649999999999997,
+      "x" : 0.22770000000000001,
+      "y" : 0.23319999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.023099999999999999,
+      "text" : "coriandre et les tomates cerises.",
+      "width" : 0.215,
+      "x" : 0.22789999999999999,
+      "y" : 0.25069999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.029499999999999998,
+      "text" : "• Écaler les œufs et les couper en quatre.",
+      "width" : 0.2702,
+      "x" : 0.22600000000000001,
+      "y" : 0.26690000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0385,
+      "text" : "Sauce : dans un petit saladier, mélanger l'huile avec le jus de",
+      "width" : 0.39700000000000002,
+      "x" : 0.22170000000000001,
+      "y" : 0.28420000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.035400000000000001,
+      "text" : "citron vert, l'ail, une pincée de sel, du poivre, le sucre, le piment et",
+      "width" : 0.42830000000000001,
+      "x" : 0.22170000000000001,
+      "y" : 0.30659999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.032099999999999997,
+      "text" : "le cumin. • Verser la sauce sur la salade et remuer délicatement.",
+      "width" : 0.41810000000000003,
+      "x" : 0.218,
+      "y" : 0.32519999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.025999999999999999,
+      "text" : "Pour 4-6 personnes",
+      "width" : 0.15479999999999999,
+      "x" : 0.72060000000000002,
+      "y" : 0.071400000000000005
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.024500000000000001,
+      "text" : "Préparation: 10 minutes",
+      "width" : 0.182,
+      "x" : 0.72060000000000002,
+      "y" : 0.092999999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "Salade",
+      "width" : 0.059200000000000003,
+      "x" : 0.71789999999999998,
+      "y" : 0.13950000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0206,
+      "text" : "• 2 avocats, pelés",
+      "width" : 0.13589999999999999,
+      "x" : 0.71309999999999996,
+      "y" : 0.16739999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017500000000000002,
+      "text" : "et dénoyautés",
+      "width" : 0.1105,
+      "x" : 0.7258,
+      "y" : 0.1875
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.023199999999999998,
+      "text" : "• 400 g de haricots noirs",
+      "width" : 0.18909999999999999,
+      "x" : 0.70920000000000005,
+      "y" : 0.2054
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.020400000000000001,
+      "text" : "en boîte, égouttés",
+      "width" : 0.14000000000000001,
+      "x" : 0.71989999999999998,
+      "y" : 0.2253
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.023400000000000001,
+      "text" : "• 1 petit oignon rouge,",
+      "width" : 0.1696,
+      "x" : 0.70609999999999995,
+      "y" : 0.2455
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.020299999999999999,
+      "text" : "finement émincé",
+      "width" : 0.12820000000000001,
+      "x" : 0.71789999999999998,
+      "y" : 0.2631
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "• 4 œufs durs",
+      "width" : 0.1065,
+      "x" : 0.70220000000000005,
+      "y" : 0.28489999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "Sauce",
+      "width" : 0.055199999999999999,
+      "x" : 0.69630000000000003,
+      "y" : 0.35470000000000002
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.023099999999999999,
+      "text" : "• 6 cuil à soupe d'huile",
+      "width" : 0.17560000000000001,
+      "x" : 0.69330000000000003,
+      "y" : 0.38169999999999998
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.016,
+      "text" : "d'oliveR",
+      "width" : 0.0533,
+      "x" : 0.70609999999999995,
+      "y" : 0.4012
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0269,
+      "text" : "• 1 gousse d'ail, finement",
+      "width" : 0.19170000000000001,
+      "x" : 0.68920000000000003,
+      "y" : 0.41930000000000001
+    },
+    {
+      "confidence" : 0.5,
+      "height" : 0.014800000000000001,
+      "text" : "hachée",
+      "width" : 0.057299999999999997,
+      "x" : 0.70209999999999995,
+      "y" : 0.44169999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.023,
+      "text" : "• ½ cuil. à café de cumin",
+      "width" : 0.18160000000000001,
+      "x" : 0.68540000000000001,
+      "y" : 0.45879999999999999
+    }
+  ],
+  "width" : 2800
+}

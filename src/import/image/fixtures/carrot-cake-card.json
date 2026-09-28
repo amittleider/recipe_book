@@ -1,0 +1,126 @@
+{
+  "height" : 2600,
+  "lines" : [
+    {
+      "confidence" : 1,
+      "height" : 0.0263,
+      "text" : "Mum's carrot cake",
+      "width" : 0.37430000000000002,
+      "x" : 0.1096,
+      "y" : 0.075600000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.021999999999999999,
+      "text" : "serves 10 Prep 25 min Bake 50 min",
+      "width" : 0.4405,
+      "x" : 0.1096,
+      "y" : 0.14530000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.027099999999999999,
+      "text" : "300g grated carrot",
+      "width" : 0.2301,
+      "x" : 0.11840000000000001,
+      "y" : 0.20399999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0247,
+      "text" : "250g plain flour",
+      "width" : 0.21360000000000001,
+      "x" : 0.1172,
+      "y" : 0.2427
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.020400000000000001,
+      "text" : "200 g soft brown sugar",
+      "width" : 0.28170000000000001,
+      "x" : 0.1172,
+      "y" : 0.28339999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.019900000000000001,
+      "text" : "3 eggs",
+      "width" : 0.083599999999999994,
+      "x" : 0.11700000000000001,
+      "y" : 0.32219999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.020500000000000001,
+      "text" : "150 ml sunflower oil",
+      "width" : 0.2495,
+      "x" : 0.1172,
+      "y" : 0.35759999999999997
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.023699999999999999,
+      "text" : "2 tsp cinnamon",
+      "width" : 0.19520000000000001,
+      "x" : 0.1169,
+      "y" : 0.39269999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.021899999999999999,
+      "text" : "I tsp bicarbonate of soda",
+      "width" : 0.28920000000000001,
+      "x" : 0.1172,
+      "y" : 0.43309999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.020500000000000001,
+      "text" : "a handful of walnuts",
+      "width" : 0.25519999999999998,
+      "x" : 0.1191,
+      "y" : 0.4708
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.019199999999999998,
+      "text" : "Grate the carrots and set aside.",
+      "width" : 0.34970000000000001,
+      "x" : 0.1191,
+      "y" : 0.5958
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.020400000000000001,
+      "text" : "Whisk the eggs with the sugar and oil until smooth.",
+      "width" : 0.59360000000000002,
+      "x" : 0.1191,
+      "y" : 0.63229999999999997
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.032599999999999997,
+      "text" : "Stir in the flour, cinnamon and bicarb, then fold through the carrot",
+      "width" : 0.76980000000000004,
+      "x" : 0.11890000000000001,
+      "y" : 0.66359999999999997
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017500000000000002,
+      "text" : "and walnuts.",
+      "width" : 0.155,
+      "x" : 0.1191,
+      "y" : 0.70640000000000003
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.021899999999999999,
+      "text" : "Bake at 170 °C for 50 minutes. Cool before icing.",
+      "width" : 0.55769999999999997,
+      "x" : 0.1172,
+      "y" : 0.74119999999999997
+    }
+  ],
+  "width" : 2000
+}

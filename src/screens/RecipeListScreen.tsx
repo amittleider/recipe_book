@@ -19,6 +19,7 @@ type Props = {
   onOpen: (recipe: RecipeSummary) => void
   onNew: () => void
   onImport: () => void
+  onScan: () => void
   onSignOut: () => void
   onAuthError: () => void
 }
@@ -90,6 +91,7 @@ export function RecipeListScreen({
   onOpen,
   onNew,
   onImport,
+  onScan,
   onSignOut,
   onAuthError,
 }: Props) {
@@ -149,15 +151,18 @@ export function RecipeListScreen({
     [remove],
   )
 
-  // Adding a recipe now has two ways in. The choice lives behind the existing
-  // button rather than a second one in the header, which has room for one.
+  // Adding a recipe now has three ways in. The choice lives behind the existing
+  // button rather than more of them in the header, which has room for one.
+  // Photographing is listed in its own right rather than hidden inside the
+  // import screen: a cook holding a cookbook is not looking for a link field.
   const chooseHowToAdd = useCallback(() => {
     Alert.alert('Ajouter une recette', undefined, [
       { text: 'Partir de zéro', onPress: onNew },
+      { text: 'Photographier une recette', onPress: onScan },
       { text: 'Importer depuis un lien', onPress: onImport },
       { text: 'Annuler', style: 'cancel' },
     ])
-  }, [onNew, onImport])
+  }, [onNew, onImport, onScan])
 
   const handleOpenChange = useCallback((folderId: string, open: boolean) => {
     setOpenFolderId(open ? folderId : null)

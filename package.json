@@ -10,6 +10,10 @@
     "android": "expo prebuild --platform android && expo run:android",
     "prebuild": "expo prebuild",
     "typecheck": "tsc --noEmit",
+    "test": "node --import ./scripts/tsResolve.mjs --test \"src/**/*.test.ts\"",
+    "test:watch": "node --import ./scripts/tsResolve.mjs --test --watch \"src/**/*.test.ts\"",
+    "ocr:fixture": "scripts/ocr/fixture.sh",
+    "ocr:inspect": "node --import ./scripts/tsResolve.mjs scripts/ocr/inspect.ts",
     "release:ios": "npx eas-cli build --platform ios --profile production --auto-submit",
     "submit:ios": "npx eas-cli submit --platform ios --profile production --latest"
   },

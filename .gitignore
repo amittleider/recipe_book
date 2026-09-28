@@ -23,6 +23,9 @@ xcuserdata/
 *.dSYM
 *.dSYM.zip
 
+# Built on demand by scripts/ocr/fixture.sh
+scripts/ocr/VisionOcr
+
 # Local configuration and macOS metadata
 .env
 .env.local

@@ -30,6 +30,20 @@ export type ImportedRecipe = {
   title: string
   ingredients: string[]
   groups: InstructionGroup[]
+  /**
+   * Named ingredient lists, when the source grouped them. A printed cookbook
+   * routinely does (`Salade`, `Sauce`); structured data on the web has no way
+   * to express it, so the web importer leaves this alone and the flat
+   * `ingredients` list stays the one source of truth there.
+   */
+  ingredientGroups?: InstructionGroup[]
+  /**
+   * Text the importer could not place, kept rather than dropped. A photographed
+   * page carries things a web page does not — a footnote, a page number, the
+   * running head — and losing a real ingredient to an over-eager filter is far
+   * worse than showing the cook a line to delete.
+   */
+  notes?: string[]
   /** ISO 8601 duration as published, formatted later. */
   totalTime: string
   prepTime: string

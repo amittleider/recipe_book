@@ -18,6 +18,11 @@ backend is required.
   media store to recipe store.
 - `src/storage/recipeCache.ts` persists recipe metadata, bodies and media to files.
 - `src/storage/keychain.ts` persists the selected root folder securely.
+- `src/ocr/textRecognition.ts` is the platform boundary for reading text out of
+  an image, wrapping the local Expo module in `modules/vision-text`.
+- `src/import` holds both importers. Everything under `src/import/image` is pure
+  TypeScript operating on an `OcrPage`, which is what lets the whole parse run
+  under `node --test` with no device.
 - `src/screens` contains native React Native screens.
 - Recipe format remains one `recipe.md` per Drive subfolder, with photos and
   videos as ordinary files beside it in the same folder.
@@ -84,6 +89,57 @@ same second would otherwise point one name at two files.
 - Images are re-encoded to JPEG at 2048px before upload: iOS hands back HEIC,
   which Android cannot display, and a raw phone photo is several megabytes on a
   folder the family syncs to several devices. Videos are passed through.
+
+## Importing a recipe
+
+Two ways in, one destination: both importers produce an `ImportedRecipe`, hand it
+to `toDocument`, and stop at a filled-in editor. Neither ever writes to Drive.
+That is what makes a parser that is right most of the time good enough — a miss
+costs the cook a few taps rather than putting a bad recipe in a shared folder.
+
+- From a link, `src/import/structuredData.ts` reads the page's `schema.org/Recipe`
+  data. Exact where it works, and it needs no model.
+- From a photograph, Apple Vision reads the page and `src/import/image` puts the
+  recipe back together. The engine is Vision rather than a cross-platform
+  package because it is markedly better on French printed type, has some chance
+  at handwriting, and — decisively — runs on a Mac over a saved photo, so
+  `scripts/ocr/fixture.sh` records test fixtures from the very engine the phone
+  uses. Android would add an ML Kit branch inside `textRecognition.ts` and
+  change nothing else.
+
+The parser's rules are typographic rather than positional, because "ingredients
+are on the right" is true of one book and false of the next:
+
+- Columns are found before anything else. OCR reports a two-column page in
+  roughly raster order, so the columns arrive interleaved and sorting by `y`
+  alone yields alternating stripes of method and ingredients.
+- Size is measured as **average character advance**, never box height. Vision
+  fits each box to the glyphs in it, so a line with no descenders comes back
+  half again shorter in the very same font.
+- Blocks break where the leading changes against a **local** window, not the
+  column average. One column routinely holds two leadings, and a single
+  threshold either shatters a large-type title or welds the body onto it.
+- A line break inside a block is wrapping, not meaning. A new ingredient starts
+  at a bullet, failing that at an indent, failing both at a new line.
+- Nothing is discarded. Text that matches nothing becomes a closing `Notes`
+  section, because an ingredient lost to an over-eager filter is far worse than
+  a line the cook deletes.
+
+## Testing
+
+`npm test` runs the suite on Node's built-in runner — no jest, no vitest, no
+transform. `scripts/tsResolve.mjs` teaches Node the extensionless imports Metro
+resolves; Node strips the types itself. Node's stripper cannot handle
+constructor parameter properties, which is why `ImportError` declares its field
+explicitly.
+
+Fixtures in `src/import/image/fixtures` are real Vision output over real images,
+recorded by `scripts/ocr/fixture.sh <photo> <name>`. They are never hand-written:
+invented OCR is always tidier than the real thing and would certify a parser that
+cannot cope. The fixtures deliberately differ in language, column count,
+bulleting, print versus handwriting and camera angle, and a set of invariants
+runs over *every* one of them — so a threshold nudged to rescue one page must
+keep all the others passing.
 
 Authentication must use the native Google SDK. Never persist access tokens in
 AsyncStorage, local files, or application state beyond the current process. On

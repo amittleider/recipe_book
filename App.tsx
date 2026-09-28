@@ -32,6 +32,10 @@ export default function App() {
   // writes to Drive itself; it stops at a filled-in form the cook approves.
   const [importedDocument, setImportedDocument] = useState<RecipeDocument | null>(null)
   const [importedUrl, setImportedUrl] = useState('')
+  // Set when the cook chose "Photographier" rather than "Importer": the import
+  // screen opens the camera straight away instead of making them find the
+  // button again.
+  const [scanOnOpen, setScanOnOpen] = useState(false)
   // The list screen unmounts whenever a recipe is opened, and a filter is a view
   // the cook expects to still be there on the way back. The search box is not:
   // it lives in the screen and is meant to be transient.
@@ -145,6 +149,12 @@ export default function App() {
           // only for stepping back out of the editor.
           onImport={() => {
             setImportedUrl('')
+            setScanOnOpen(false)
+            setScreen('import')
+          }}
+          onScan={() => {
+            setImportedUrl('')
+            setScanOnOpen(true)
             setScreen('import')
           }}
           onSignOut={handleSignOut}
@@ -166,11 +176,15 @@ export default function App() {
       {screen === 'import' && rootFolder && (
         <ImportScreen
           initialUrl={importedUrl}
+          scanOnOpen={scanOnOpen}
           onCancel={() => setScreen('list')}
           onImported={(document, url) => {
             setEditingFolderId(null)
             setImportedDocument(document)
             setImportedUrl(url)
+            // Backing out of the editor should land on the import screen at
+            // rest, not reopen the camera.
+            setScanOnOpen(false)
             setScreen('editor')
           }}
         />

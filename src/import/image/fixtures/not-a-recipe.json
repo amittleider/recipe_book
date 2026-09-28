@@ -1,0 +1,70 @@
+{
+  "height" : 3000,
+  "lines" : [
+    {
+      "confidence" : 1,
+      "height" : 0.0247,
+      "text" : "Introduction",
+      "width" : 0.23169999999999999,
+      "x" : 0.1149,
+      "y" : 0.092999999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "La cuisine de tous les jours n'a pas besoin d'être compliquée pour être bonne. Ce livre",
+      "width" : 0.73660000000000003,
+      "x" : 0.1168,
+      "y" : 0.16270000000000001
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.017399999999999999,
+      "text" : "rassemble les plats que nous préparons le plus souvent, ceux qui reviennent sur la table",
+      "width" : 0.75249999999999995,
+      "x" : 0.1149,
+      "y" : 0.189
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "sans qu'on y pense, et qui finissent par définir le goût d'une maison.",
+      "width" : 0.58220000000000005,
+      "x" : 0.1188,
+      "y" : 0.215
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "Chaque chapitre suit une saison. Vous y trouverez des légumes d'hiver, des salades",
+      "width" : 0.71679999999999999,
+      "x" : 0.1168,
+      "y" : 0.24129999999999999
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "d'été, et quelques desserts qui ne demandent qu'un four et un peu de patience.",
+      "width" : 0.68120000000000003,
+      "x" : 0.1188,
+      "y" : 0.26729999999999998
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0178,
+      "text" : "Les quantités sont données pour quatre personnes, sauf indication contraire, et se",
+      "width" : 0.70309999999999995,
+      "x" : 0.1187,
+      "y" : 0.2913
+    },
+    {
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "multiplient sans difficulté.",
+      "width" : 0.2238,
+      "x" : 0.1149,
+      "y" : 0.31969999999999998
+    }
+  ],
+  "width" : 2200
+}

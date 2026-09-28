@@ -113,6 +113,41 @@ export async function pickMedia(): Promise<PickedAsset[]> {
 }
 
 /**
+ * The camera and the gallery again, but for *reading* a photo rather than
+ * keeping one.
+ *
+ * The difference is `normalise`, which is skipped here. That step exists to make
+ * a photo cheap to sync and safe to show on Android, and both of those cost
+ * exactly what text recognition needs: it caps the long edge at 2048px and
+ * re-encodes at JPEG quality 0.85, which softens the small print on a cookbook
+ * page — the very characters the parser is about to read. Vision opens HEIC
+ * without help, and this image is never uploaded, so the original is handed over
+ * untouched.
+ */
+async function scanned(result: ImagePicker.ImagePickerResult): Promise<string> {
+  if (result.canceled || !result.assets?.length) return ''
+  return result.assets[0]?.uri ?? ''
+}
+
+/** Photograph a recipe. Returns '' if the cook backed out. */
+export async function captureForScan(): Promise<string> {
+  if (!(await allowed('camera'))) return ''
+  return scanned(await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 }))
+}
+
+/** Choose a photograph of a recipe from the gallery. */
+export async function pickForScan(): Promise<string> {
+  if (!(await allowed('library'))) return ''
+  return scanned(
+    await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: false,
+      quality: 1,
+    }),
+  )
+}
+
+/**
  * The two ways in, as one choice. Used from the recipe view and the editor so
  * adding a photo means the same thing in both places.
  */
