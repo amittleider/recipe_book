@@ -99,8 +99,14 @@ costs the cook a few taps rather than putting a bad recipe in a shared folder.
 
 - From a link, `src/import/structuredData.ts` reads the page's `schema.org/Recipe`
   data. Exact where it works, and it needs no model.
-- From a photograph, Apple Vision reads the page and `src/import/image` puts the
-  recipe back together. The engine is Vision rather than a cross-platform
+- From a photograph, the page is flattened first and Apple Vision then reads it,
+  and `src/import/image` puts the recipe back together. Photographing goes
+  through `VNDocumentCameraViewController`, the system scanner, which finds the
+  page edges live and corrects the shot before we see it; a picture already in
+  the library goes through `DocumentImage`, which does the same job after the
+  fact with `VNDetectDocumentSegmentationRequest`, `CIPerspectiveCorrection` and
+  `CIDocumentEnhancer`. `DocumentImage.swift` is compiled into both the app and
+  the fixture recorder, so a fixture cannot be testing a different pipeline. The engine is Vision rather than a cross-platform
   package because it is markedly better on French printed type, has some chance
   at handwriting, and — decisively — runs on a Mac over a saved photo, so
   `scripts/ocr/fixture.sh` records test fixtures from the very engine the phone
@@ -110,9 +116,21 @@ costs the cook a few taps rather than putting a bad recipe in a shared folder.
 The parser's rules are typographic rather than positional, because "ingredients
 are on the right" is true of one book and false of the next:
 
-- Columns are found before anything else. OCR reports a two-column page in
-  roughly raster order, so the columns arrive interleaved and sorting by `y`
-  alone yields alternating stripes of method and ingredients.
+- The page is put the right way up before anything reads its layout. A cookbook
+  spread is wider than it is tall, so the phone gets turned and the text runs up
+  the frame; Vision reads that well but not perfectly, and a page found to be
+  sideways is rotated and read *again* — coordinates can be rotated after the
+  fact, but text never recognised cannot be recovered. A cheap `.fast` probe to
+  find the orientation does not work: on a sideways page `.fast` returns nothing
+  at all.
+- Residual tilt is levelled from the angle of the text lines themselves rather
+  than the paper's corners — a curved spine bows every line by a different
+  amount, which no four-corner correction can undo.
+- Columns are found next. OCR reports a two-column page in roughly raster order,
+  so the columns arrive interleaved and sorting by `y` alone yields alternating
+  stripes of method and ingredients. The gutter is swept for and measured **in
+  characters**: a real photograph narrows the gutter, and a threshold in page
+  widths rejected a perfectly clean one, collapsing the page to a single column.
 - Size is measured as **average character advance**, never box height. Vision
   fits each box to the glyphs in it, so a line with no descenders comes back
   half again shorter in the very same font.
@@ -121,6 +139,22 @@ are on the right" is true of one book and false of the next:
   threshold either shatters a large-type title or welds the body onto it.
 - A line break inside a block is wrapping, not meaning. A new ingredient starts
   at a bullet, failing that at an indent, failing both at a new line.
+- A bullet is a *mark followed by a space*, not a character from a list this
+  codebase knows. One book sets its steps with `❖`, which Vision reads as `→`,
+  `«` or `¿` depending on how the ink caught the light; matching glyphs finds
+  some of a page's steps and welds the rest onto their neighbours.
+- Which edge a list is aligned on is measured, never assumed. Indentation marks
+  a continuation only on a list set flush left; on a right-aligned list every
+  line begins somewhere different, and reading those offsets as indentation
+  folds seventeen ingredients into two.
+- A page that marked its own steps has said where they begin, so they are not
+  cut further at sentence boundaries. Sentences are consulted only when the page
+  offers nothing of its own.
+- A heading starts a list and its absence continues the one above. Blocks with no
+  heading are merged as *lines*, before items are read from them, because a list
+  broken across blocks is usually broken mid-item.
+- No document may carry two sections of one name. `toDocument` folds them, so no
+  caller can emit a recipe whose sections cannot be told apart.
 - Nothing is discarded. Text that matches nothing becomes a closing `Notes`
   section, because an ingredient lost to an over-eager filter is far worse than
   a line the cook deletes.
@@ -134,12 +168,21 @@ constructor parameter properties, which is why `ImportError` declares its field
 explicitly.
 
 Fixtures in `src/import/image/fixtures` are real Vision output over real images,
-recorded by `scripts/ocr/fixture.sh <photo> <name>`. They are never hand-written:
-invented OCR is always tidier than the real thing and would certify a parser that
-cannot cope. The fixtures deliberately differ in language, column count,
-bulleting, print versus handwriting and camera angle, and a set of invariants
-runs over *every* one of them — so a threshold nudged to rescue one page must
-keep all the others passing.
+and the images live beside them in `fixtures/pages` so every fixture can be
+re-recorded with `npm run ocr:fixtures`. Do that after any change under
+`modules/vision-text/ios`: a suite passing against stale fixtures is testing a
+pipeline that no longer exists. Fixtures are never hand-written — invented OCR
+is always tidier than the real thing and would certify a parser that cannot cope.
+
+The corpus deliberately differs in language, column count, bulleting, print
+versus handwriting, camera angle and orientation, and a set of invariants runs
+over *every* page — so a threshold nudged to rescue one must keep the others
+passing. A page marked `hard` records **floors** rather than expectations: they
+may rise freely and must never fall, so a page read badly today can only get
+better. See `fixtures/README.md`.
+
+The `real-*` pages are photographs the cook actually took, and they earn their
+place: every one of them has broken something no rendered page did.
 
 Authentication must use the native Google SDK. Never persist access tokens in
 AsyncStorage, local files, or application state beyond the current process. On

@@ -113,10 +113,14 @@ export async function pickMedia(): Promise<PickedAsset[]> {
 }
 
 /**
- * The camera and the gallery again, but for *reading* a photo rather than
- * keeping one.
+ * The gallery again, but for *reading* a photo rather than keeping one.
  *
- * The difference is `normalise`, which is skipped here. That step exists to make
+ * There is no camera twin: photographing a recipe goes through Apple's document
+ * scanner in `src/ocr/textRecognition.ts`, which finds the page edges live in
+ * the viewfinder and corrects the shot before we ever see it. This path exists
+ * for a photo that was taken earlier and is already in the library.
+ *
+ * The difference from `pickMedia` is `normalise`, which is skipped here. That step exists to make
  * a photo cheap to sync and safe to show on Android, and both of those cost
  * exactly what text recognition needs: it caps the long edge at 2048px and
  * re-encodes at JPEG quality 0.85, which softens the small print on a cookbook
@@ -127,12 +131,6 @@ export async function pickMedia(): Promise<PickedAsset[]> {
 async function scanned(result: ImagePicker.ImagePickerResult): Promise<string> {
   if (result.canceled || !result.assets?.length) return ''
   return result.assets[0]?.uri ?? ''
-}
-
-/** Photograph a recipe. Returns '' if the cook backed out. */
-export async function captureForScan(): Promise<string> {
-  if (!(await allowed('camera'))) return ''
-  return scanned(await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 }))
 }
 
 /** Choose a photograph of a recipe from the gallery. */

@@ -22,6 +22,12 @@ export type OcrLine = {
   height: number
   /** 0..1 where the engine reports one. Used to drop rubbish, never to rank. */
   confidence: number
+  /**
+   * Degrees the line is rotated, anticlockwise positive, from the engine's own
+   * quadrilateral for that line. Absent in a fixture recorded before this
+   * existed, which `deskew` treats as level.
+   */
+  angle?: number
 }
 
 export type OcrPage = {

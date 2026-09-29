@@ -31,6 +31,37 @@ export type PageMetrics = {
 const BULLET = /^\s*[•·◦‣∙●○*▪+–—-]\s+/
 
 /**
+ * Any single non-word character opening a line, whatever it is.
+ *
+ * Printers do not restrict themselves to a list of glyphs this codebase knows.
+ * One book in hand sets its steps with `❖`, which Vision variously reports as
+ * `&`, `*`, `•` or `❖` depending on how the ink caught the light — so a fixed
+ * inventory of bullet characters misses it several different ways on one page.
+ * What actually identifies a bullet is structural: a mark, then a space, at the
+ * head of several lines that are otherwise prose.
+ */
+const MARK = /^\s*([^\p{L}\p{N}\s])\s+/u
+
+/** The mark opening this line, if it has one. */
+export function markOf(text: string): string | null {
+  return text.match(MARK)?.[1] ?? null
+}
+
+/**
+ * Whether this block delimits its entries with a leading mark.
+ *
+ * Two lines is enough to establish a convention and not enough to be an
+ * accident. Notice that the *glyph* is not required to match: one book sets its
+ * steps with `❖`, which Vision reads as `→` on one line, `«` on the next and `¿`
+ * on a third depending on how the ink caught the light. Insisting on a single
+ * character finds some of a page's steps and silently welds the rest onto their
+ * neighbours. What identifies a bullet is that a mark is there at all.
+ */
+export function marksEntries(lines: OcrLine[]): boolean {
+  return lines.filter((line) => markOf(line.text)).length >= 2
+}
+
+/**
  * A line that opens with an amount. Covers `400 g`, `2 avocats`, `½ cuil.`,
  * `1/2 tasse` and `6 cuil. à soupe`, in either language. This is the signal that
  * survives when a cook's handwritten list has no bullets at all.
@@ -62,6 +93,16 @@ const NOISE_PATTERNS: RegExp[] = [
  */
 const FOOTNOTE_SIZE = 0.8
 const FOOTNOTE_TOP = 0.75
+
+/**
+ * A running head or a folio: one short line alone in the very top or bottom
+ * margin. Every book has them and none of them are the recipe — this one's
+ * carried the author's name upside down along the foot of the page, which
+ * otherwise reads as a title in capitals.
+ */
+const MARGIN_TOP = 0.04
+const MARGIN_BOTTOM = 0.9
+const MARGIN_CHARS = 48
 
 /** Ingredient-group and method headings a page uses, in both languages. */
 const SECTION_WORDS = [
@@ -107,13 +148,15 @@ function sizeRatio(block: Block, page: PageMetrics): number {
 function score(block: Block, page: PageMetrics): Record<BlockKind, number> {
   const { lines } = block
   const text = blockText(lines)
-  const bullets = share(lines, (value) => BULLET.test(value))
-  const quantities = share(lines, (value) => QUANTITY.test(value.replace(BULLET, '')))
+  const bullets = share(lines, (value) => MARK.test(value))
+  const quantities = share(lines, (value) => QUANTITY.test(value.replace(MARK, '')))
   const metaHits = META_PATTERNS.filter((pattern) => pattern.test(text)).length
   const relative = sizeRatio(block, page)
   const caps = share(lines, (value) => CAPS.test(value.trim()) && value.trim().length > 1)
   const length = averageLength(lines)
   const footnote = relative < FOOTNOTE_SIZE && block.y > FOOTNOTE_TOP
+  const furniture =
+    lines.length === 1 && text.trim().length <= MARGIN_CHARS && (block.y < MARGIN_TOP || block.y > MARGIN_BOTTOM)
 
   return {
     // Big type, near the top, not many words. Size is the strongest signal and
@@ -130,9 +173,16 @@ function score(block: Block, page: PageMetrics): Record<BlockKind, number> {
       (/[.!?]\s*$/.test(text.trim()) ? 0.5 : 0) +
       (bullets < 0.5 ? 0.5 : -1) +
       (lines.length >= 2 ? 0.5 : 0) -
-      (quantities > 0.6 ? 1.5 : 0),
+      (quantities > 0.6 ? 1.5 : 0) -
+      // One line that never finishes a sentence is a heading or a strapline,
+      // not a method. This book's `JAMBALAYA AUX ÉPICES, CREVETTES ET POULET`
+      // sits under the title and would otherwise arrive as step one.
+      (lines.length === 1 && !/[.!?]\s*$/.test(text.trim()) ? 1.5 : 0),
     heading: lines.length === 1 && isSectionWord(text) ? 4 : 0,
-    noise: (NOISE_PATTERNS.some((pattern) => pattern.test(text.trim())) ? 5 : 0) + (footnote ? 4 : 0),
+    noise:
+      (NOISE_PATTERNS.some((pattern) => pattern.test(text.trim())) ? 5 : 0) +
+      (footnote ? 4 : 0) +
+      (furniture ? 4 : 0),
   }
 }
 
@@ -146,4 +196,4 @@ export function classify(blocks: Block[], page: PageMetrics): Classified[] {
   })
 }
 
-export { BULLET, QUANTITY, blockText }
+export { BULLET, MARK, QUANTITY, blockText }

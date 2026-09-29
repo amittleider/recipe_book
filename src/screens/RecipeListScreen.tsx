@@ -158,7 +158,7 @@ export function RecipeListScreen({
   const chooseHowToAdd = useCallback(() => {
     Alert.alert('Ajouter une recette', undefined, [
       { text: 'Partir de zéro', onPress: onNew },
-      { text: 'Photographier une recette', onPress: onScan },
+      { text: 'Scanner une recette', onPress: onScan },
       { text: 'Importer depuis un lien', onPress: onImport },
       { text: 'Annuler', style: 'cancel' },
     ])

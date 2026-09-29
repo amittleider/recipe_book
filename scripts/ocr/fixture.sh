@@ -13,9 +13,11 @@ root="$(cd "$here/../.." && pwd)"
 image="$1"; name="${2:-$(basename "${1%.*}")}"; shift 2 2>/dev/null || shift 1
 langs=("$@"); [ ${#langs[@]} -gt 0 ] || langs=(fr-FR en-US)
 
-if [ ! -x "$here/VisionOcr" ] || [ "$here/VisionOcr.swift" -nt "$here/VisionOcr" ]; then
+shared="$root/modules/vision-text/ios/DocumentImage.swift"
+reader="$root/modules/vision-text/ios/PageReader.swift"
+if [ ! -x "$here/VisionOcr" ] || [ "$here/main.swift" -nt "$here/VisionOcr" ] || [ "$shared" -nt "$here/VisionOcr" ] || [ "$reader" -nt "$here/VisionOcr" ]; then
   echo "building VisionOcr…" >&2
-  swiftc -O "$here/VisionOcr.swift" -o "$here/VisionOcr"
+  swiftc -O "$here/main.swift" "$shared" "$reader" -o "$here/VisionOcr"
 fi
 
 out="$root/src/import/image/fixtures/$name.json"

@@ -28,11 +28,14 @@ type NativeLine = {
 }
 
 type NativeModule = {
-  recognize: (uri: string, languages: string[]) => Promise<{
+  recognize: (uri: string, languages: string[], flatten: boolean) => Promise<{
     width: number
     height: number
     lines: NativeLine[]
   }>
+  canScanDocuments: () => boolean
+  /** Resolves to a `file://` URI, or '' when the cook backed out. */
+  scanDocument: () => Promise<string>
 }
 
 /**
@@ -44,17 +47,45 @@ const LANGUAGES = ['fr-FR', 'en-US']
 
 const native = requireOptionalNativeModule<NativeModule>('VisionText')
 
-/** Whether this build can read text at all, so the UI can hide what it cannot do. */
+/** Whether this build can read text at all, so the UI can say what it cannot do. */
 export function canRecognizeText(): boolean {
   return !!native
 }
 
-export async function recognizeText(uri: string): Promise<OcrPage> {
+/** Whether the system document scanner can be offered on this device. */
+export function canScanDocuments(): boolean {
+  try {
+    return !!native?.canScanDocuments()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Apple's document scanner, which finds the page edges in the viewfinder,
+ * captures when the shot is square, and hands back a corrected, shadow-free
+ * page. Resolves to '' when the cook backs out, which is not an error.
+ */
+export async function scanDocument(): Promise<string> {
+  if (!native) throw new ImportError('unreadable')
+  try {
+    return await native.scanDocument()
+  } catch {
+    throw new ImportError('unreadable')
+  }
+}
+
+/**
+ * `flatten` squares up and cleans the page before reading it. Anything that came
+ * from `scanDocument` has been through that already, at a quality this cannot
+ * match, and enhancing it twice only costs contrast.
+ */
+export async function recognizeText(uri: string, flatten = true): Promise<OcrPage> {
   if (!native) throw new ImportError('unreadable')
 
   let page: Awaited<ReturnType<NativeModule['recognize']>>
   try {
-    page = await native.recognize(uri, LANGUAGES)
+    page = await native.recognize(uri, LANGUAGES, flatten)
   } catch {
     // A file that will not decode and a Vision failure are the same thing to a
     // cook: this photo did not work, try another.

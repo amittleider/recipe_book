@@ -1,0 +1,21 @@
+{
+  "comment": "Every fixture in the suite, and the image it was recorded from. Regenerate them all with `npm run ocr:fixtures` after changing anything in modules/vision-text/ios.",
+  "pages": [
+    { "fixture": "real-salade", "page": "real-salade-haricots-avocat.jpg", "languages": ["fr-FR", "en-US"] },
+    { "fixture": "real-jambalaya-close", "page": "real-jambalaya-close.jpg", "languages": ["fr-FR", "en-US"] },
+    { "fixture": "real-jambalaya-wide", "page": "real-jambalaya-wide.jpg", "languages": ["fr-FR", "en-US"] },
+
+    { "fixture": "salade", "page": "salade.jpg", "languages": ["fr-FR", "en-US"] },
+    { "fixture": "salade-photo", "page": "salade-photo.jpg", "languages": ["fr-FR", "en-US"] },
+    { "fixture": "salade-photo-raw", "page": "salade-photo.jpg", "languages": ["fr-FR", "en-US"], "raw": true },
+    { "fixture": "salade-skewed", "page": "salade-skewed.jpg", "languages": ["fr-FR", "en-US"] },
+    { "fixture": "salade-rot90", "page": "salade-rot90.jpg", "languages": ["fr-FR", "en-US"] },
+
+    { "fixture": "jambalaya-upright", "page": "jambalaya.jpg", "languages": ["fr-FR", "en-US"] },
+    { "fixture": "jambalaya-rot90", "page": "jambalaya-rot90.jpg", "languages": ["fr-FR", "en-US"] },
+
+    { "fixture": "lemon-drizzle", "page": "lemon-drizzle.jpg", "languages": ["en-US"] },
+    { "fixture": "carrot-cake-card", "page": "carrot-cake-card.jpg", "languages": ["en-US"] },
+    { "fixture": "not-a-recipe", "page": "not-a-recipe.jpg", "languages": ["fr-FR", "en-US"] }
+  ]
+}

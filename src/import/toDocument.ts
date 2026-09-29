@@ -6,7 +6,7 @@ import {
   type RecipeDocument,
   type Section,
 } from '../lib/recipeDocument'
-import type { ImportedRecipe } from './structuredData'
+import type { ImportedRecipe, InstructionGroup } from './structuredData'
 
 /**
  * An imported recipe, in the shape the editor already knows how to show.
@@ -73,13 +73,38 @@ function listSection(name: string, kind: 'bullet' | 'ordered', texts: string[]):
 }
 
 /**
+ * Groups sharing a name folded into one, in the order they first appeared.
+ *
+ * Two sections called `Ingrédients` is never what anyone wanted, and it is what
+ * a photographed page produces the moment its lists are broken across blocks.
+ * Folding here means no caller can emit a document whose sections cannot be told
+ * apart, however the recipe was read.
+ */
+function merged(groups: InstructionGroup[]): InstructionGroup[] {
+  const byName = new Map<string, InstructionGroup>()
+  const order: InstructionGroup[] = []
+  for (const group of groups) {
+    const key = normalise(group.name)
+    const seen = byName.get(key)
+    if (seen) {
+      seen.steps = [...seen.steps, ...group.steps]
+      continue
+    }
+    const copy = { ...group, steps: [...group.steps] }
+    byName.set(key, copy)
+    order.push(copy)
+  }
+  return order
+}
+
+/**
  * One bullet section per named ingredient group, or the single `Ingrédients`
  * section when the source did not group them. A lone unnamed group is the same
  * thing as no grouping, so it keeps the ordinary heading and a photographed
  * recipe reads exactly like one typed here.
  */
 function ingredientSections(recipe: ImportedRecipe): Section[] {
-  const groups = (recipe.ingredientGroups ?? []).filter((group) => group.steps.length)
+  const groups = merged(recipe.ingredientGroups ?? []).filter((group) => group.steps.length)
   if (!groups.length || (groups.length === 1 && !groups[0]?.name.trim())) {
     return [listSection('Ingrédients', 'bullet', recipe.ingredients)]
   }
@@ -89,7 +114,7 @@ function ingredientSections(recipe: ImportedRecipe): Section[] {
 export function toDocument(recipe: ImportedRecipe, sourceUrl: string): RecipeDocument {
   const sections: Section[] = ingredientSections(recipe)
 
-  const groups = recipe.groups.filter((group) => group.steps.length)
+  const groups = merged(recipe.groups).filter((group) => group.steps.length)
   if (groups.length === 1 && groups[0]) {
     // One flat list of steps is the ordinary case and keeps the usual heading,
     // so an imported recipe reads exactly like one written here.

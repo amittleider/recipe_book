@@ -1,0 +1,393 @@
+{
+  "height" : 4597,
+  "lines" : [
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0088999999999999999,
+      "text" : "Pour 4 personnes",
+      "width" : 0.083000000000000004,
+      "x" : 0.045499999999999999,
+      "y" : 0.025999999999999999
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0060000000000000001,
+      "text" : "Niveau : 00",
+      "width" : 0.053400000000000003,
+      "x" : 0.045499999999999999,
+      "y" : 0.0407
+    },
+    {
+      "angle" : 0,
+      "confidence" : 0.5,
+      "height" : 0.020299999999999999,
+      "text" : "JAMBALAYA",
+      "width" : 0.2016,
+      "x" : 0.17000000000000001,
+      "y" : 0.082799999999999999
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0276,
+      "text" : "DE LA CONFRÉRIE",
+      "width" : 0.31230000000000002,
+      "x" : 0.11459999999999999,
+      "y" : 0.1133
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0117,
+      "text" : "JAMBALAYA AUX ÉPICES, CREVETTES ET POULET",
+      "width" : 0.2964,
+      "x" : 0.1225,
+      "y" : 0.14530000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.010200000000000001,
+      "text" : "Temps de préparation : 20 min - Temps de cuisson : 40 min",
+      "width" : 0.27079999999999999,
+      "x" : 0.063200000000000006,
+      "y" : 0.2006
+    },
+    {
+      "angle" : 0,
+      "confidence" : 0.5,
+      "height" : 0.013100000000000001,
+      "text" : "3 poivrons",
+      "width" : 0.057299999999999997,
+      "x" : 0.4229,
+      "y" : 0.23830000000000001
+    },
+    {
+      "angle" : 0.47299999999999998,
+      "confidence" : 1,
+      "height" : 0.0135,
+      "text" : "2 oignons",
+      "width" : 0.055500000000000001,
+      "x" : 0.42480000000000001,
+      "y" : 0.25269999999999998
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "2 branches de céleri",
+      "width" : 0.1028,
+      "x" : 0.37940000000000002,
+      "y" : 0.26740000000000003
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0117,
+      "text" : "2 gousses d'ail",
+      "width" : 0.085000000000000006,
+      "x" : 0.39529999999999998,
+      "y" : 0.28199999999999997
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "1 botte de persil plat",
+      "width" : 0.1047,
+      "x" : 0.3755,
+      "y" : 0.29360000000000003
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.016,
+      "text" : "240 g de blancs de volaille",
+      "width" : 0.13439999999999999,
+      "x" : 0.3478,
+      "y" : 0.30669999999999997
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0161,
+      "text" : "2 saucisses fumées (ou 240 g de chorizo épicé)",
+      "width" : 0.23319999999999999,
+      "x" : 0.247,
+      "y" : 0.32119999999999999
+    },
+    {
+      "angle" : 0,
+      "confidence" : 0.5,
+      "height" : 0.0132,
+      "text" : "5g de paprika",
+      "width" : 0.0751,
+      "x" : 0.40710000000000002,
+      "y" : 0.33850000000000002
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.010200000000000001,
+      "text" : "5g de piment de Cayenne",
+      "width" : 0.13239999999999999,
+      "x" : 0.3498,
+      "y" : 0.35320000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.010200000000000001,
+      "text" : "250 g de tomates concassées",
+      "width" : 0.1482,
+      "x" : 0.33400000000000002,
+      "y" : 0.36630000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0103,
+      "text" : "75 cl de bouillon de volaille (voir page 133)",
+      "width" : 0.20549999999999999,
+      "x" : 0.2747,
+      "y" : 0.38069999999999998
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0117,
+      "text" : "200 g de riz",
+      "width" : 0.065199999999999994,
+      "x" : 0.41699999999999998,
+      "y" : 0.39529999999999998
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "1 branche de thym",
+      "width" : 0.094899999999999998,
+      "x" : 0.38740000000000002,
+      "y" : 0.40839999999999999
+    },
+    {
+      "angle" : -0.088999999999999996,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "1 feuille de laurier",
+      "width" : 0.090899999999999995,
+      "x" : 0.39129999999999998,
+      "y" : 0.4229
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.010200000000000001,
+      "text" : "16 grosses crevettes roses cuites et décortiquées",
+      "width" : 0.24110000000000001,
+      "x" : 0.24110000000000001,
+      "y" : 0.4375
+    },
+    {
+      "angle" : 0.41099999999999998,
+      "confidence" : 1,
+      "height" : 0.0121,
+      "text" : "Huile d'olive",
+      "width" : 0.0654,
+      "x" : 0.41689999999999999,
+      "y" : 0.45029999999999998
+    },
+    {
+      "angle" : -0.44600000000000001,
+      "confidence" : 1,
+      "height" : 0.0121,
+      "text" : "Sel et poivre",
+      "width" : 0.067400000000000002,
+      "x" : 0.41489999999999999,
+      "y" : 0.46489999999999998
+    },
+    {
+      "angle" : 0,
+      "confidence" : 0.5,
+      "height" : 0.0073000000000000001,
+      "text" : "AVELINE DE GRANDPRE",
+      "width" : 0.1008,
+      "x" : 0.063200000000000006,
+      "y" : 0.95199999999999996
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "& Commencez par préparer vos différents ingrédients : épépinez les poivrons et",
+      "width" : 0.36559999999999998,
+      "x" : 0.5534,
+      "y" : 0.1991
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0117,
+      "text" : "taillez-les en brunoise (dés de 2 mm de côté). Réservez. Pelez les oignons et ciselez-",
+      "width" : 0.38740000000000002,
+      "x" : 0.5514,
+      "y" : 0.2135
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "les finement. Rincez le céleri et taillez-le également en brunoise. Pelez l'ail, écrasez-le",
+      "width" : 0.39129999999999998,
+      "x" : 0.5514,
+      "y" : 0.22520000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0117,
+      "text" : "sous la lame de votre couteau et ôtez-en les germes.",
+      "width" : 0.24310000000000001,
+      "x" : 0.5514,
+      "y" : 0.23980000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.013100000000000001,
+      "text" : "* Séparez les feuilles des branches de persil et ciselez-les. Réservez.",
+      "width" : 0.31619999999999998,
+      "x" : 0.5534,
+      "y" : 0.2631
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.013100000000000001,
+      "text" : "* À l'aide d'un couteau d'office, taillez les blancs de volaille en beaux morceaux",
+      "width" : 0.36559999999999998,
+      "x" : 0.5534,
+      "y" : 0.28920000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.010200000000000001,
+      "text" : "réguliers et les saucisses en rondelles épaisses.",
+      "width" : 0.21740000000000001,
+      "x" : 0.5534,
+      "y" : 0.30380000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "* Dans une poêle, faites chauffer un bon filet d'huile d'olive à feu moyen et déposez-y",
+      "width" : 0.39129999999999998,
+      "x" : 0.5534,
+      "y" : 0.32700000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "les oignons, l'ail et le céleri. Dès la première coloration, ajoutez la volaille et les",
+      "width" : 0.35970000000000002,
+      "x" : 0.5514,
+      "y" : 0.34000000000000002
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0146,
+      "text" : "saucisses fumées et faites revenir le tout pendant 7 min. Saupoudrez de paprika et de",
+      "width" : 0.38929999999999998,
+      "x" : 0.5534,
+      "y" : 0.35320000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "piment de Cayenne, puis incorporez les poivrons et les tomates concassées.",
+      "width" : 0.3478,
+      "x" : 0.5534,
+      "y" : 0.36630000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.013100000000000001,
+      "text" : "Assaisonnez de sel et de poivre à votre convenance et faites revenir le tout à couvert",
+      "width" : 0.38540000000000002,
+      "x" : 0.5534,
+      "y" : 0.37940000000000002
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "pendant 10 min à feu moyen.",
+      "width" : 0.13439999999999999,
+      "x" : 0.5534,
+      "y" : 0.39090000000000003
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0146,
+      "text" : "* Mélangez régulièrement à l'aide d'une cuillère en bois. Incorporez alors le bouillon",
+      "width" : 0.38340000000000002,
+      "x" : 0.5534,
+      "y" : 0.41720000000000002
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.011599999999999999,
+      "text" : "de volaille et attendez les premiers frémissements. Incorporez le riz, ajoutez le thym et",
+      "width" : 0.39329999999999998,
+      "x" : 0.5534,
+      "y" : 0.43169999999999997
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0132,
+      "text" : "le laurier. Corrigez l'assaisonnement si besoin, couvrez et laissez cuire pendant 20 min",
+      "width" : 0.39329999999999998,
+      "x" : 0.5534,
+      "y" : 0.44319999999999998
+    },
+    {
+      "angle" : -0.59399999999999997,
+      "confidence" : 1,
+      "height" : 0.0123,
+      "text" : "à feu moyen.",
+      "width" : 0.063500000000000001,
+      "x" : 0.55330000000000001,
+      "y" : 0.45610000000000001
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.014500000000000001,
+      "text" : "* Dressage : servez ce jambalaya épicé bien chaud, déposez les crevettes à sa",
+      "width" : 0.36759999999999998,
+      "x" : 0.5534,
+      "y" : 0.48110000000000003
+    },
+    {
+      "angle" : 0,
+      "confidence" : 1,
+      "height" : 0.0117,
+      "text" : "surface et saupoudrez de persil plat ciselé. Il ne vous reste plus qu'à déguster!",
+      "width" : 0.36559999999999998,
+      "x" : 0.5534,
+      "y" : 0.4955
+    }
+  ],
+  "width" : 3377
+}

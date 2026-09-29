@@ -4,8 +4,8 @@ import { Button, ErrorBanner, Header, Screen } from '../components/ui'
 import { ImportError } from '../import/errors'
 import { importRecipe } from '../import/importRecipe'
 import { importFromImage } from '../import/importFromImage'
-import { captureForScan, pickForScan } from '../lib/mediaPicker'
-import { canRecognizeText } from '../ocr/textRecognition'
+import { pickForScan } from '../lib/mediaPicker'
+import { canRecognizeText, canScanDocuments, scanDocument } from '../ocr/textRecognition'
 import type { RecipeDocument } from '../lib/recipeDocument'
 import { colors, fonts } from '../theme'
 
@@ -79,10 +79,13 @@ export function ImportScreen({ initialUrl = '', scanOnOpen = false, onImported, 
     try {
       // The picker runs before the spinner: backing out of the camera is not a
       // failure and should not leave a button spinning.
-      const uri = source === 'camera' ? await captureForScan() : await pickForScan()
+      const scanning = source === 'camera' && canScanDocuments()
+      const uri = scanning ? await scanDocument() : await pickForScan()
       if (!uri) return
       setBusy(source)
-      onImported(await importFromImage(uri), '')
+      // A scanned page is already squared and cleaned by the system; flattening
+      // it again would only enhance it twice.
+      onImported(await importFromImage(uri, !scanning), '')
     } catch (caught) {
       report(caught)
     } finally {

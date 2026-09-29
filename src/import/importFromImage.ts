@@ -13,8 +13,8 @@ import type { RecipeDocument } from '../lib/recipeDocument'
  * Everything interesting happens in `./image/document`, which knows nothing
  * about cameras and is tested without one.
  */
-export async function importFromImage(uri: string): Promise<RecipeDocument> {
-  return documentFromPage(await recognizeText(uri))
+export async function importFromImage(uri: string, flatten = true): Promise<RecipeDocument> {
+  return documentFromPage(await recognizeText(uri, flatten))
 }
 
 export { isUsablePhoto } from './image/document'

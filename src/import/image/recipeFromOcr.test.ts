@@ -130,3 +130,53 @@ test('servings are read in either language, range intact', () => {
   assert.equal(servingsIn('Serves 8'), '8 personnes')
   assert.equal(servingsIn('Niveau de difficulté : 1'), '')
 })
+
+test('a right-aligned list is one ingredient per line', () => {
+  // This book sets its ingredients flush right, so every line begins somewhere
+  // different. Reading those offsets as indentation — which is correct for a
+  // flush-left list — folded seventeen ingredients into two.
+  const lines = [
+    line('3 poivrons', 0.42, 0.10),
+    line('2 branches de céleri', 0.30, 0.13),
+    line('2 saucisses fumées (ou 240 g de chorizo)', 0.10, 0.16),
+    line('Sel et poivre', 0.39, 0.19),
+  ]
+  assert.deepEqual(itemsFrom(lines), [
+    '3 poivrons',
+    '2 branches de céleri',
+    '2 saucisses fumées (ou 240 g de chorizo)',
+    'Sel et poivre',
+  ])
+})
+
+test('a flush-left list still joins its wrapped lines', () => {
+  // The counterpart to the test above: the same code must keep reading real
+  // indentation as continuation when the list is set the ordinary way.
+  const lines = [
+    line('400 g de haricots noirs', 0.10, 0.10),
+    line('en boîte, égouttés', 0.13, 0.13),
+    line('4 œufs durs', 0.10, 0.16),
+    line('pain pita grillé', 0.10, 0.19),
+  ]
+  assert.deepEqual(itemsFrom(lines), [
+    '400 g de haricots noirs en boîte, égouttés',
+    '4 œufs durs',
+    'pain pita grillé',
+  ])
+})
+
+test("a page's own step markers are not split further at sentences", () => {
+  // The page already said where its steps begin. Cutting those at every full
+  // stop would impose a structure the author did not write.
+  const marked = stepsFrom([
+    line('❖ Pelez les oignons. Ciselez-les finement. Réservez.', 0.1, 0.10),
+    line('❖ Rincez le céleri. Taillez-le en brunoise.', 0.1, 0.14),
+  ])
+  assert.deepEqual(marked[0]?.steps.length, 2)
+
+  // With no markers, an unbroken paragraph still gets cut into readable steps.
+  const unmarked = stepsFrom([
+    line('Pelez les oignons. Ciselez-les finement. Réservez.', 0.1, 0.10),
+  ])
+  assert.equal(unmarked[0]?.steps.length, 3)
+})

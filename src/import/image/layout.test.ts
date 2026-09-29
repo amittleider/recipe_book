@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { blocksIn, columns, median, readingOrder, typeSize } from './layout'
+import { blocksIn, columns, median, orient, orientationOf, readingOrder, skewOf, typeSize } from './layout'
+import { markOf, marksEntries } from './classify'
 import type { OcrLine } from '../../ocr/types'
 
 /**
@@ -124,4 +125,128 @@ test('median of an even count averages the middle pair', () => {
   assert.equal(median([1, 2, 3, 4]), 2.5)
   assert.equal(median([3, 1, 2]), 2)
   assert.equal(median([]), 0)
+})
+
+// --- skew and narrow gutters ------------------------------------------------
+
+test('a gutter is measured in characters, not in page widths', () => {
+  // The bug this pins: a real photographed page produced a perfectly clean
+  // gutter 1.5% of the page wide, and a constant demanding 3.5% threw it away,
+  // collapsing two columns into one and interleaving the recipe with itself.
+  const left = stack(['Method line one here', 'Method line two here', 'Method line three'], 0.10, 0.10, 0.03)
+  const right = stack(['2 eggs', '200 g flour', '1 tsp salt'], 0.36, 0.10, 0.03)
+  // Left runs to ~0.24, right starts at 0.36: about two characters of clearance.
+  assert.equal(columns([...left, ...right]).length, 2)
+})
+
+test('a word space is not a gutter', () => {
+  // A hole one character wide is the space between two words, and splitting
+  // there would cut every line of the page in half.
+  const lines = [
+    ...stack(['Method line one here', 'Method line two here', 'Method line three'], 0.10, 0.10, 0.03),
+    ...stack(['and more text here x', 'and further text now', 'and a third line xx'], 0.247, 0.10, 0.03),
+  ]
+  assert.equal(columns(lines).length, 1)
+})
+
+test('the page tilt is the median line angle, not the mean', () => {
+  // A curved spine throws a few lines to wild angles; the middle of them is
+  // still the page's true lie, while their average is meaningless.
+  const lines = [
+    { ...line('a line of prose here', 0.1, 0.1), angle: -1.2 },
+    { ...line('another line of text', 0.1, 0.2), angle: -1.0 },
+    { ...line('a third line of text', 0.1, 0.3), angle: -1.1 },
+    { ...line('a curled line here x', 0.1, 0.4), angle: -7.9 },
+    { ...line('another curled line', 0.1, 0.5), angle: 6.8 },
+  ]
+  assert.ok(Math.abs(skewOf(lines) - -1.1) < 0.001)
+})
+
+test('deskew puts a rotated page back where it started', () => {
+  const upright = [
+    ...stack(['Method line one here', 'Method line two here', 'Method line three'], 0.10, 0.10, 0.10),
+    ...stack(['2 eggs', '200 g flour', '1 tsp salt'], 0.60, 0.10, 0.10),
+  ]
+  const degrees = 2
+  const radians = (degrees * Math.PI) / 180
+  const width = 1000
+  const height = 1400
+
+  // Rotate the page the other way, exactly as a tilted photograph would.
+  const tilted = upright.map((entry: OcrLine) => {
+    const x = (entry.x + entry.width / 2) * width - width / 2
+    const y = (entry.y + entry.height / 2) * height - height / 2
+    const turnedX = x * Math.cos(-radians) - y * Math.sin(-radians) + width / 2
+    const turnedY = x * Math.sin(-radians) + y * Math.cos(-radians) + height / 2
+    return {
+      ...entry,
+      angle: degrees,
+      x: turnedX / width - entry.width / 2,
+      y: turnedY / height - entry.height / 2,
+    }
+  })
+
+  const levelled = orient({ width, height, lines: tilted }).lines
+  levelled.forEach((entry: OcrLine, index: number) => {
+    assert.ok(Math.abs(entry.x - (upright[index]?.x ?? 0)) < 1e-9)
+    assert.ok(Math.abs(entry.y - (upright[index]?.y ?? 0)) < 1e-9)
+  })
+})
+
+test('a level page is left exactly alone', () => {
+  const lines = stack(['a line of prose here', 'another line of text', 'a third line here x'], 0.1, 0.1, 0.03)
+  assert.deepEqual(orient({ width: 1000, height: 1400, lines }).lines, lines)
+})
+
+test('a sideways page is stood back up, and its frame turns with it', () => {
+  // A cookbook spread is wider than it is tall, so the phone gets turned and the
+  // text runs up the frame. Vision reads it perfectly and reports every line at
+  // 90°; it is the layout that cannot cope until the page is righted.
+  const sideways = [
+    { ...line('a line of prose here', 0.10, 0.70), angle: 90, width: 0.02, height: 0.40 },
+    { ...line('another line of text', 0.14, 0.70), angle: 90, width: 0.02, height: 0.40 },
+    { ...line('a third line of text', 0.18, 0.70), angle: 90, width: 0.02, height: 0.40 },
+  ]
+  const upright = orient({ width: 2000, height: 1000, lines: sideways })
+
+  assert.equal(orientationOf(sideways), 90)
+  assert.equal(upright.width, 1000)
+  assert.equal(upright.height, 2000)
+  for (const entry of upright.lines) {
+    // What was a tall, thin box is now a wide, short one: a line of text again.
+    assert.ok(entry.width > entry.height, `expected a horizontal line, got ${entry.width}x${entry.height}`)
+    assert.ok(Math.abs(entry.angle ?? 0) < 1e-9)
+  }
+})
+
+test('an upside-down page is turned the whole way round', () => {
+  const inverted = [
+    { ...line('a line of prose here', 0.3, 0.3), angle: 180 },
+    { ...line('another line of text', 0.3, 0.4), angle: -180 },
+    { ...line('a third line of text', 0.3, 0.5), angle: 179.4 },
+  ]
+  assert.equal(Math.abs(orientationOf(inverted)), 180)
+  const upright = orient({ width: 1000, height: 1400, lines: inverted })
+  for (const entry of upright.lines) assert.ok(Math.abs(entry.angle ?? 0) < 1)
+})
+
+test('a mark is a bullet whatever glyph it turns out to be', () => {
+  // One book sets its steps with ❖, which Vision reads as → on one line, « on
+  // the next and ¿ on a third. Insisting on a single character finds some of a
+  // page's steps and silently welds the rest onto their neighbours.
+  const lines = [
+    line('→ Commencez par préparer vos ingrédients.', 0.1, 0.10),
+    line('« Séparez les feuilles du persil.', 0.1, 0.14),
+    line('¿ Dans une poêle, faites chauffer.', 0.1, 0.18),
+  ]
+  assert.ok(marksEntries(lines))
+  assert.deepEqual(lines.map((entry) => !!markOf(entry.text)), [true, true, true])
+})
+
+test('prose is not mistaken for a marked list', () => {
+  const lines = [
+    line('Commencez par préparer vos ingrédients.', 0.1, 0.10),
+    line('Séparez les feuilles du persil.', 0.1, 0.14),
+  ]
+  assert.ok(!marksEntries(lines))
 })

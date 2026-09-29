@@ -11,7 +11,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { classify } from '../../src/import/image/classify'
-import { columns, readingOrder, typeSize } from '../../src/import/image/layout'
+import { byGrain, columns, orient, orientationOf, readingOrder, regions, skewOf, typeSize } from '../../src/import/image/layout'
 import { recipeFromOcr } from '../../src/import/image/recipeFromOcr'
 import { documentFromPage } from '../../src/import/image/document'
 import { serialize } from '../../src/lib/recipeDocument'
@@ -24,15 +24,33 @@ if (!path) {
 }
 
 const page = JSON.parse(readFileSync(path, 'utf8')) as OcrPage
-// The same filter `recipeFromOcr` applies, so what is printed is what it saw.
-const lines = page.lines.filter((line) => line.text.trim() && line.confidence >= 0.3)
+// The same levelling and filtering `recipeFromOcr` applies, so what is printed
+// is exactly what it saw.
+const turn = orientationOf(page.lines)
+const skew = skewOf(page.lines, turn)
+const upright = orient(page)
+const legible = upright.lines.filter((line) => line.text.trim() && line.confidence >= 0.3)
+const { flowing: lines, crossGrain } = byGrain(legible)
 const sizes = lines.filter((line) => line.text.trim().length >= 4).map(typeSize).sort((a, b) => a - b)
 const metrics = { typeSize: sizes[Math.floor(sizes.length / 2)] ?? 0 }
 
-console.log(`${page.width}×${page.height}px · ${page.lines.length} lines read, ${lines.length} kept`)
-console.log(`columns: ${columns(lines).length} · body type size: ${metrics.typeSize.toFixed(5)}\n`)
+console.log(
+  `${page.width}×${page.height}px · ${page.lines.length} lines read, ${lines.length} kept` +
+    (crossGrain.length ? ` (${crossGrain.length} across the grain)` : ''),
+)
+console.log(`turn: ${turn}° · skew: ${skew.toFixed(2)}° · columns: ${columns(lines).length} · body type size: ${metrics.typeSize.toFixed(5)}\n`)
 
-console.log('── blocks ────────────────────────────────────────────────')
+console.log('── regions ───────────────────────────────────────────────')
+for (const region of regions(lines)) {
+  const xs = region.map((line) => line.x)
+  const ys = region.map((line) => line.y)
+  console.log(
+    `${String(region.length).padStart(3)} lines  x ${Math.min(...xs).toFixed(2)}-${Math.max(...xs).toFixed(2)}` +
+      `  y ${Math.min(...ys).toFixed(2)}-${Math.max(...ys).toFixed(2)}  ${region[0]?.text.slice(0, 44)}`,
+  )
+}
+
+console.log('\n── blocks ────────────────────────────────────────────────')
 for (const block of classify(readingOrder(lines), metrics)) {
   const preview = block.text.replace(/\n/g, ' ⏎ ').slice(0, 74)
   console.log(`col${block.column} ${block.kind.padEnd(11)} y=${block.y.toFixed(3)}  ${preview}`)

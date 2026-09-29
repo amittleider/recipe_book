@@ -151,3 +151,22 @@ test('prep plus cook stands in for a missing total', () => {
   assert.equal(totalTime(web({ totalTime: '', prepTime: 'PT20M', cookTime: 'PT25M' })), '45 min')
   assert.equal(totalTime(web({ totalTime: 'PT30M', prepTime: 'PT20M', cookTime: 'PT25M' })), '30 min')
 })
+
+test('groups sharing a name are folded into one section', () => {
+  // A page photographed over a curved spine breaks one list into fragments, and
+  // four sections called `Ingrédients` is never what anyone wanted.
+  const document = toDocument(
+    web({
+      ingredientGroups: [
+        { name: 'Sauce', steps: ["6 cuil. à soupe d'huile"] },
+        { name: '', steps: ['1 pincée de sucre'] },
+        { name: '', steps: ['sel et poivre'] },
+      ],
+    }),
+    '',
+  )
+  const names = document.sections.map((section) => section.name)
+  assert.equal(new Set(names).size, names.length)
+  const anonymous = document.sections.find((section) => section.name === 'Ingrédients')
+  assert.deepEqual(anonymous?.items.map((item) => item.text), ['1 pincée de sucre', 'sel et poivre'])
+})
